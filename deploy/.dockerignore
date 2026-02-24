@@ -1,0 +1,15 @@
+# Keep build context focused for offline image build
+*
+
+# Required by deploy/vllm/Dockerfile
+!assets/
+assets/*
+!assets/models/
+assets/models/*
+!assets/models/Qwen3-Coder-Next/
+!assets/models/Qwen3-Coder-Next/**
+
+!vllm/
+vllm/*
+!vllm/Dockerfile
+!vllm/entrypoint.sh

@@ -135,7 +135,7 @@ docker build \
   --build-arg VLLM_BASE_IMAGE="${VLLM_BASE_IMAGE}" \
   -t "${IMAGE_INFERENCE}" \
   -f "${DEPLOY_DIR}/vllm/Dockerfile" \
-  "${ROOT_DIR}"
+  "${DEPLOY_DIR}"
 
 log "Saving docker images into ${BUNDLE_TAR}"
 docker save -o "${TMP_DIR}/images.tar" "${IMAGE_INFERENCE}" "${IMAGE_GATEWAY}"
