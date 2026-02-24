@@ -44,13 +44,14 @@ cp deploy/.env.example deploy/.env
 - `MAX_BODY_SIZE`：默认 `50m`。
 - `TP` / `MAX_MODEL_LEN` / `DTYPE`：vLLM 启动参数。
 - `CUDA_VISIBLE_DEVICES`：可空，用于限制 GPU。
+- `ENABLE_GPU`：默认 `1`；若宿主机未安装 NVIDIA Container Toolkit，可临时设为 `0`（不附加 `--gpus all`）。
 - `IMAGE_INFERENCE` / `IMAGE_GATEWAY`：镜像名。
 - `ENABLE_RATE_LIMIT`：`off`（默认）或 `on`。
 - `HF_CONDA_ENV` / `HF_CONDA_PYTHON`：离线打包时用于下载模型的 Conda 隔离环境参数。
 - `VLLM_BASE_IMAGE`：vLLM 基础镜像（可改为企业镜像仓库地址）。
 - `DOCKER_PULL_RETRIES` / `DOCKER_PULL_RETRY_WAIT`：`docker pull` 重试次数与间隔。
 - `SKIP_GATEWAY_PULL` / `SKIP_VLLM_BASE_PULL`：设为 `1` 时跳过拉取，直接使用本地已加载镜像。
-- `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（`ZSTD_THREADS=0` 表示自动用多核）。
+- `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（默认 `ZSTD_LEVEL=6`，`ZSTD_THREADS=0` 表示自动用多核）。
 - `MIRROR_PROFILE`：`default` 或 `cn`；设为 `cn` 时自动切换到中国可用镜像源（可被手动变量覆盖）。
 - `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
 - `RELEASE_BUNDLE_MODE`：一体化发布包打包模式，`zst|tar|both`，默认 `zst`（优先体积更小）。

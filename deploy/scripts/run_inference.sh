@@ -10,6 +10,7 @@ PORT="${INFERENCE_PORT:-8000}"
 MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
 DTYPE="${DTYPE:-auto}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-}"
+ENABLE_GPU="${ENABLE_GPU:-1}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
 require_docker
@@ -17,9 +18,19 @@ ensure_network
 ensure_image "${IMAGE_INFERENCE}"
 remove_container_if_exists "${INFERENCE_CONTAINER_NAME}"
 
-GPU_ARGS=(--gpus all)
-if [[ -n "${CUDA_VISIBLE_DEVICES}" ]]; then
-  GPU_ARGS+=( -e "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}" )
+GPU_ARGS=()
+if [[ "${ENABLE_GPU}" == "1" ]]; then
+  if ! docker info --format '{{json .Runtimes}}' | rg -q 'nvidia'; then
+    echo "Docker GPU runtime not available. Install nvidia-container-toolkit, or set ENABLE_GPU=0 to run without --gpus." >&2
+    exit 1
+  fi
+
+  GPU_ARGS=(--gpus all)
+  if [[ -n "${CUDA_VISIBLE_DEVICES}" ]]; then
+    GPU_ARGS+=( -e "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}" )
+  fi
+else
+  log "ENABLE_GPU=0, starting without --gpus"
 fi
 
 log "Starting inference container ${INFERENCE_CONTAINER_NAME} using image ${IMAGE_INFERENCE}"
