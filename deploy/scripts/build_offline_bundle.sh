@@ -12,7 +12,37 @@ BUNDLE_TAR="${DIST_DIR}/qwen3_coder_next_stack.tar"
 TMP_DIR="${DIST_DIR}/tmp"
 
 require_docker
-require_cmd huggingface-cli
+require_cmd python3
+
+ensure_huggingface_cli() {
+  if command -v huggingface-cli >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! python3 -m pip --version >/dev/null 2>&1; then
+    log "pip for python3 not found, trying ensurepip"
+    python3 -m ensurepip --upgrade
+  fi
+
+  log "huggingface-cli not found, trying to install huggingface_hub[cli] via pip"
+  python3 -m pip install --user "huggingface_hub[cli]"
+
+  if command -v huggingface-cli >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local user_bin
+  user_bin="$(python3 -m site --user-base)/bin"
+  if [[ -x "${user_bin}/huggingface-cli" ]]; then
+    export PATH="${user_bin}:${PATH}"
+    return 0
+  fi
+
+  echo "huggingface-cli installation failed. Please run: python3 -m pip install --user 'huggingface_hub[cli]'" >&2
+  exit 1
+}
+
+ensure_huggingface_cli
 mkdir -p "${MODEL_DIR}" "${DIST_DIR}" "${TMP_DIR}"
 
 log "Downloading model ${MODEL_ID} into ${MODEL_DIR}"

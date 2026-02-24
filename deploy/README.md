@@ -177,6 +177,24 @@ curl http://<SERVER_IP>:8080/v1/chat/completions \
 bash deploy/scripts/run_gateway.sh
 ```
 
+### huggingface-cli / huggingface_hub 缺失
+
+如果遇到报错：
+
+```text
+from huggingface_hub.commands.huggingface_cli import main
+ModuleNotFoundError: No module named 'huggingface_hub'
+```
+
+处理方式：
+
+```bash
+python3 -m pip install --user "huggingface_hub[cli]"
+export PATH="$(python3 -m site --user-base)/bin:$PATH"
+```
+
+新版 `build_offline_bundle.sh` 已自动尝试安装；若企业终端限制 `pip` 安装，请联系管理员预装该依赖。
+
 ### 502 Bad Gateway
 
 - inference 未启动或尚未 ready。
