@@ -127,6 +127,37 @@ bash deploy/scripts/load_and_run.sh
 
 该脚本会自动：`docker load` -> 启动 inference -> 启动 gateway -> 打印状态。
 
+
+## 一体化发布包（服务器无仓库代码）
+
+如果服务器没有本仓库代码，建议在办公电脑执行：
+
+```bash
+# 1) 先生成镜像离线包
+bash deploy/scripts/build_offline_bundle.sh
+
+# 2) 再生成“一体化发布包”（包含 deploy 目录和 dist 镜像包）
+bash deploy/scripts/make_portable_release.sh
+```
+
+生成文件：`deploy/dist/llm_offline_release.tar.gz`。
+
+服务器端：
+
+```bash
+# 1) 解压
+tar -xzf llm_offline_release.tar.gz
+cd llm_offline_release
+
+# 2) 首次运行会自动生成 deploy/.env（若不存在），请编辑 API_KEY
+./run_on_server.sh
+
+# 3) 编辑完 deploy/.env 后再次执行
+./run_on_server.sh
+```
+
+`run_on_server.sh` 内部会调用 `deploy/scripts/load_and_run.sh` 完成：解压 `.tar.zst`（若存在）-> `docker load` -> 启动 inference -> 启动 gateway。
+
 ## 运维命令
 
 ```bash
