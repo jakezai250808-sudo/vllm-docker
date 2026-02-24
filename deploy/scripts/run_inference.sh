@@ -20,8 +20,13 @@ remove_container_if_exists "${INFERENCE_CONTAINER_NAME}"
 
 GPU_ARGS=()
 if [[ "${ENABLE_GPU}" == "1" ]]; then
-  if ! docker info --format '{{json .Runtimes}}' | grep -q 'nvidia'; then
-    echo "Docker GPU runtime not available. Install nvidia-container-toolkit, or set ENABLE_GPU=0 to run without --gpus." >&2
+  if ! docker info --format '{{json .Runtimes}}' | grep -q '"nvidia"'; then
+    echo "Docker NVIDIA runtime not available. Install nvidia-container-toolkit, or set ENABLE_GPU=0 to run without --gpus." >&2
+    exit 1
+  fi
+
+  if ! docker run --rm --gpus all --entrypoint /bin/sh "${IMAGE_INFERENCE}" -c 'exit 0' >/dev/null 2>&1; then
+    echo "Docker reports NVIDIA runtime, but --gpus is not usable on this host. Verify NVIDIA driver/toolkit setup, or set ENABLE_GPU=0 to run without --gpus." >&2
     exit 1
   fi
 
