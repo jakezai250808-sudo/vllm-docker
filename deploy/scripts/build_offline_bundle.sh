@@ -20,6 +20,9 @@ SKIP_VLLM_BASE_PULL="${SKIP_VLLM_BASE_PULL:-0}"
 ZSTD_LEVEL="${ZSTD_LEVEL:-19}"
 ZSTD_THREADS="${ZSTD_THREADS:-0}"
 MIRROR_PROFILE="${MIRROR_PROFILE:-default}"
+CLEANUP_LOCAL_IMAGES="${CLEANUP_LOCAL_IMAGES:-1}"
+CLEANUP_BASE_IMAGE="${CLEANUP_BASE_IMAGE:-0}"
+CLEANUP_PRUNE_DANGLING="${CLEANUP_PRUNE_DANGLING:-1}"
 CN_IMAGE_GATEWAY="${CN_IMAGE_GATEWAY:-docker.m.daocloud.io/library/nginx:stable}"
 CN_VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE:-docker.m.daocloud.io/vllm/vllm-openai:latest}"
 
@@ -69,6 +72,26 @@ ensure_hf_python_deps_in_conda_env() {
   else
     log "Installing huggingface_hub in conda env ${HF_CONDA_ENV}"
     conda run -n "${HF_CONDA_ENV}" python -m pip install huggingface_hub
+  fi
+}
+
+
+cleanup_local_images() {
+  if [[ "${CLEANUP_LOCAL_IMAGES}" != "1" ]]; then
+    log "CLEANUP_LOCAL_IMAGES=${CLEANUP_LOCAL_IMAGES}, skip local image cleanup"
+    return 0
+  fi
+
+  log "Cleaning local images to reduce disk usage"
+  docker image rm -f "${IMAGE_INFERENCE}" >/dev/null 2>&1 || true
+  docker image rm -f "${IMAGE_GATEWAY}" >/dev/null 2>&1 || true
+
+  if [[ "${CLEANUP_BASE_IMAGE}" == "1" ]]; then
+    docker image rm -f "${VLLM_BASE_IMAGE}" >/dev/null 2>&1 || true
+  fi
+
+  if [[ "${CLEANUP_PRUNE_DANGLING}" == "1" ]]; then
+    docker image prune -f >/dev/null 2>&1 || true
   fi
 }
 
@@ -133,5 +156,8 @@ if command -v zstd >/dev/null 2>&1; then
 else
   log "zstd not found, skipping compression"
 fi
+
+rm -f "${TMP_DIR}/images.tar"
+cleanup_local_images
 
 log "Bundle ready under ${DIST_DIR}"

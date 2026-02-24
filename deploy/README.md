@@ -55,6 +55,9 @@ cp deploy/.env.example deploy/.env
 - `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
 - `RELEASE_BUNDLE_MODE`：一体化发布包打包模式，`zst|tar|both`，默认 `zst`（优先体积更小）。
 - `RELEASE_BUNDLE_GLOB`：可选通配符；设置后优先于 `RELEASE_BUNDLE_MODE`。
+- `CLEANUP_LOCAL_IMAGES`：离线包生成后是否删除本地 inference/gateway 镜像（默认 `1`）。
+- `CLEANUP_BASE_IMAGE`：清理时是否删除 `VLLM_BASE_IMAGE`（默认 `0`）。
+- `CLEANUP_PRUNE_DANGLING`：清理时是否执行 `docker image prune -f`（默认 `1`）。
 
 ## 安全策略
 
@@ -402,3 +405,29 @@ bash deploy/scripts/make_portable_release.sh
 find deploy/dist -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.old' \) -delete
 ```
 
+
+### 打包后自动清理镜像（防磁盘占满）
+
+`build_offline_bundle.sh` 默认会在打包完成后清理本地镜像，避免反复运行导致 Docker 磁盘占用持续增长。
+
+默认行为：
+
+- 删除 `IMAGE_INFERENCE`、`IMAGE_GATEWAY`
+- 清理 dangling layers（`docker image prune -f`）
+- 默认不删 `VLLM_BASE_IMAGE`（可选开启）
+
+如需保留本地镜像供后续复用：
+
+```bash
+export CLEANUP_LOCAL_IMAGES=0
+bash deploy/scripts/build_offline_bundle.sh
+```
+
+如需更激进清理：
+
+```bash
+export CLEANUP_LOCAL_IMAGES=1
+export CLEANUP_BASE_IMAGE=1
+export CLEANUP_PRUNE_DANGLING=1
+bash deploy/scripts/build_offline_bundle.sh
+```
