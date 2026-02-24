@@ -7,36 +7,31 @@ source "${SCRIPT_DIR}/common.sh"
 
 MODEL_ID="Qwen/Qwen3-Coder-Next"
 MODEL_DIR="${DEPLOY_DIR}/assets/models/Qwen3-Coder-Next"
+MODEL_BUILD_DIR="${DEPLOY_DIR}/vllm/models/Qwen3-Coder-Next"
 DIST_DIR="${DEPLOY_DIR}/dist"
 BUNDLE_TAR="${DIST_DIR}/qwen3_coder_next_stack.tar"
 TMP_DIR="${DIST_DIR}/tmp"
 HF_CONDA_ENV="${HF_CONDA_ENV:-llm-offline-hf}"
 HF_CONDA_PYTHON="${HF_CONDA_PYTHON:-3.10}"
-VLLM_BASE_IMAGE="${VLLM_BASE_IMAGE:-vllm/vllm-openai:latest}"
 DOCKER_PULL_RETRIES="${DOCKER_PULL_RETRIES:-3}"
 DOCKER_PULL_RETRY_WAIT="${DOCKER_PULL_RETRY_WAIT:-10}"
 SKIP_GATEWAY_PULL="${SKIP_GATEWAY_PULL:-0}"
-SKIP_VLLM_BASE_PULL="${SKIP_VLLM_BASE_PULL:-0}"
 ZSTD_LEVEL="${ZSTD_LEVEL:-6}"
 ZSTD_THREADS="${ZSTD_THREADS:-0}"
 MIRROR_PROFILE="${MIRROR_PROFILE:-default}"
 CLEANUP_LOCAL_IMAGES="${CLEANUP_LOCAL_IMAGES:-1}"
 CN_IMAGE_GATEWAY="${CN_IMAGE_GATEWAY:-docker.m.daocloud.io/library/nginx:stable}"
-CN_VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE:-docker.m.daocloud.io/vllm/vllm-openai:latest}"
 
 if [[ "${MIRROR_PROFILE}" == "cn" ]]; then
   if [[ "${IMAGE_GATEWAY}" == "nginx:stable" ]]; then
     IMAGE_GATEWAY="${CN_IMAGE_GATEWAY}"
   fi
-  if [[ "${VLLM_BASE_IMAGE}" == "vllm/vllm-openai:latest" ]]; then
-    VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE}"
-  fi
-  log "MIRROR_PROFILE=cn enabled: IMAGE_GATEWAY=${IMAGE_GATEWAY}, VLLM_BASE_IMAGE=${VLLM_BASE_IMAGE}"
+  log "MIRROR_PROFILE=cn enabled: IMAGE_GATEWAY=${IMAGE_GATEWAY}"
 fi
 
 require_docker
 require_cmd conda
-mkdir -p "${MODEL_DIR}" "${DIST_DIR}" "${TMP_DIR}"
+mkdir -p "${MODEL_DIR}" "${DIST_DIR}" "${TMP_DIR}" "${DEPLOY_DIR}/vllm/models"
 
 retry_docker_pull() {
   local image="$1"
@@ -83,7 +78,7 @@ cleanup_local_images() {
   log "Cleaning generated local images to reduce disk usage"
   docker image rm -f "${IMAGE_INFERENCE}" >/dev/null 2>&1 || true
 
-  log "Keep base/gateway images for reuse: ${VLLM_BASE_IMAGE}, ${IMAGE_GATEWAY}"
+  log "Keep gateway image for reuse: ${IMAGE_GATEWAY}"
 }
 
 download_model_via_python_api() {
@@ -102,6 +97,10 @@ PY
 ensure_hf_python_deps_in_conda_env
 download_model_via_python_api
 
+log "Syncing model into docker build context ${MODEL_BUILD_DIR}"
+rm -rf "${MODEL_BUILD_DIR}"
+cp -a "${MODEL_DIR}" "${MODEL_BUILD_DIR}"
+
 if [[ "${SKIP_GATEWAY_PULL}" == "1" ]]; then
   log "SKIP_GATEWAY_PULL=1, skip pulling ${IMAGE_GATEWAY}"
 else
@@ -116,26 +115,11 @@ else
   fi
 fi
 
-if [[ "${SKIP_VLLM_BASE_PULL}" == "1" ]]; then
-  log "SKIP_VLLM_BASE_PULL=1, skip pulling ${VLLM_BASE_IMAGE}"
-else
-  log "Ensuring vLLM base image ${VLLM_BASE_IMAGE} is available"
-  if ! retry_docker_pull "${VLLM_BASE_IMAGE}" "${DOCKER_PULL_RETRIES}" "${DOCKER_PULL_RETRY_WAIT}"; then
-    if docker image inspect "${VLLM_BASE_IMAGE}" >/dev/null 2>&1; then
-      log "Pull failed but local base image ${VLLM_BASE_IMAGE} exists, continue"
-    else
-      echo "Failed to pull ${VLLM_BASE_IMAGE}. Set VLLM_BASE_IMAGE to your mirror or pre-load image and set SKIP_VLLM_BASE_PULL=1." >&2
-      exit 1
-    fi
-  fi
-fi
-
 log "Building inference image ${IMAGE_INFERENCE}"
 docker build \
-  --build-arg VLLM_BASE_IMAGE="${VLLM_BASE_IMAGE}" \
   -t "${IMAGE_INFERENCE}" \
   -f "${DEPLOY_DIR}/vllm/Dockerfile" \
-  "${DEPLOY_DIR}"
+  "${DEPLOY_DIR}/vllm"
 
 log "Saving docker images into ${BUNDLE_TAR}"
 docker save -o "${TMP_DIR}/images.tar" "${IMAGE_INFERENCE}" "${IMAGE_GATEWAY}"

@@ -5,9 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/common.sh"
 
-TP="${TP:-2}"
+TP="${TP:-1}"
 PORT="${INFERENCE_PORT:-8000}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
 DTYPE="${DTYPE:-auto}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-}"
 ENABLE_GPU="${ENABLE_GPU:-1}"

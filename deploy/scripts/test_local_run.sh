@@ -5,21 +5,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/common.sh"
 
-VLLM_BASE_IMAGE="${VLLM_BASE_IMAGE:-vllm/vllm-openai:latest}"
 DOCKER_PULL_RETRIES="${DOCKER_PULL_RETRIES:-3}"
 DOCKER_PULL_RETRY_WAIT="${DOCKER_PULL_RETRY_WAIT:-10}"
 SKIP_GATEWAY_PULL="${SKIP_GATEWAY_PULL:-0}"
-SKIP_VLLM_BASE_PULL="${SKIP_VLLM_BASE_PULL:-0}"
 RUN_STACK="${RUN_STACK:-1}"
 ENABLE_GPU="${ENABLE_GPU:-1}"
 CUDA_TEST_IMAGE="${CUDA_TEST_IMAGE:-nvidia/cuda:12.1.0-base-ubuntu22.04}"
 INFERENCE_IMAGE="${INFERENCE_IMAGE:-${IMAGE_INFERENCE}}"
-TP="${TP:-2}"
+TP="${TP:-1}"
 PORT="${INFERENCE_PORT:-8000}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
 DTYPE="${DTYPE:-auto}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
+MODEL_ASSET_DIR="${DEPLOY_DIR}/assets/models/Qwen3-Coder-Next"
+MODEL_BUILD_DIR="${DEPLOY_DIR}/vllm/models/Qwen3-Coder-Next"
 GPU_MODE="none"
 
 info() {
@@ -300,17 +300,21 @@ if [[ "${SKIP_GATEWAY_PULL}" != "1" ]] && ! docker image inspect "${IMAGE_GATEWA
   retry_docker_pull "${IMAGE_GATEWAY}" "${DOCKER_PULL_RETRIES}" "${DOCKER_PULL_RETRY_WAIT}"
 fi
 
-if [[ "${SKIP_VLLM_BASE_PULL}" != "1" ]] && ! docker image inspect "${VLLM_BASE_IMAGE}" >/dev/null 2>&1; then
-  info "Pulling vLLM base image ${VLLM_BASE_IMAGE}"
-  retry_docker_pull "${VLLM_BASE_IMAGE}" "${DOCKER_PULL_RETRIES}" "${DOCKER_PULL_RETRY_WAIT}"
+info "Preparing model files for docker build context"
+if [[ ! -d "${MODEL_ASSET_DIR}" ]]; then
+  error "Model assets not found: ${MODEL_ASSET_DIR}"
+  error "Please run deploy/scripts/build_offline_bundle.sh first to download model assets."
+  exit 1
 fi
+rm -rf "${MODEL_BUILD_DIR}"
+mkdir -p "${DEPLOY_DIR}/vllm/models"
+cp -a "${MODEL_ASSET_DIR}" "${MODEL_BUILD_DIR}"
 
 info "Building local inference image ${INFERENCE_IMAGE} (no tar/zst bundle)"
 docker build \
-  --build-arg VLLM_BASE_IMAGE="${VLLM_BASE_IMAGE}" \
   -t "${INFERENCE_IMAGE}" \
   -f "${DEPLOY_DIR}/vllm/Dockerfile" \
-  "${DEPLOY_DIR}"
+  "${DEPLOY_DIR}/vllm"
 
 if [[ "${RUN_STACK}" != "1" ]]; then
   info "RUN_STACK=${RUN_STACK}, build finished and skip starting containers"
