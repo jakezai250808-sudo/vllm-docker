@@ -9,7 +9,8 @@ require_cmd tar
 
 DIST_DIR="${DEPLOY_DIR}/dist"
 RELEASE_NAME="${RELEASE_NAME:-llm_offline_release}"
-RELEASE_BUNDLE_GLOB="${RELEASE_BUNDLE_GLOB:-qwen3_coder_next_stack.tar*}"
+RELEASE_BUNDLE_MODE="${RELEASE_BUNDLE_MODE:-zst}"  # zst|tar|both
+RELEASE_BUNDLE_GLOB="${RELEASE_BUNDLE_GLOB:-}"
 RELEASE_TMP_DIR="$(mktemp -d -t llm_offline_release_XXXXXX)"
 RELEASE_ROOT_DIR="${RELEASE_TMP_DIR}/${RELEASE_NAME}"
 RELEASE_ARCHIVE="${DIST_DIR}/${RELEASE_NAME}.tar.gz"
@@ -45,11 +46,36 @@ mkdir -p "${RELEASE_ROOT_DIR}/deploy"
 )
 
 mkdir -p "${RELEASE_ROOT_DIR}/deploy/dist"
-selected_bundle_files=("${DIST_DIR}"/${RELEASE_BUNDLE_GLOB})
-if [[ ${#selected_bundle_files[@]} -eq 0 ]]; then
-  log "No files matched RELEASE_BUNDLE_GLOB=${RELEASE_BUNDLE_GLOB}, fallback to all *.tar/*.tar.zst"
-  selected_bundle_files=("${DIST_DIR}"/*.tar "${DIST_DIR}"/*.tar.zst)
+selected_bundle_files=()
+if [[ -n "${RELEASE_BUNDLE_GLOB}" ]]; then
+  selected_bundle_files=("${DIST_DIR}"/${RELEASE_BUNDLE_GLOB})
+  if [[ ${#selected_bundle_files[@]} -eq 0 ]]; then
+    echo "RELEASE_BUNDLE_GLOB=${RELEASE_BUNDLE_GLOB} did not match any files in ${DIST_DIR}" >&2
+    exit 1
+  fi
+else
+  case "${RELEASE_BUNDLE_MODE}" in
+    zst)
+      selected_bundle_files=("${DIST_DIR}"/*.tar.zst)
+      ;;
+    tar)
+      selected_bundle_files=("${DIST_DIR}"/*.tar)
+      ;;
+    both)
+      selected_bundle_files=("${DIST_DIR}"/*.tar.zst "${DIST_DIR}"/*.tar)
+      ;;
+    *)
+      echo "Invalid RELEASE_BUNDLE_MODE=${RELEASE_BUNDLE_MODE}, expected: zst|tar|both" >&2
+      exit 1
+      ;;
+  esac
+
+  if [[ ${#selected_bundle_files[@]} -eq 0 ]]; then
+    echo "No bundle files matched mode=${RELEASE_BUNDLE_MODE} in ${DIST_DIR}" >&2
+    exit 1
+  fi
 fi
+
 cp -a "${selected_bundle_files[@]}" "${RELEASE_ROOT_DIR}/deploy/dist/"
 
 cat > "${RELEASE_ROOT_DIR}/run_on_server.sh" <<'RUNNER'

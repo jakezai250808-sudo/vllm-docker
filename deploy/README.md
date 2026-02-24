@@ -53,7 +53,8 @@ cp deploy/.env.example deploy/.env
 - `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（`ZSTD_THREADS=0` 表示自动用多核）。
 - `MIRROR_PROFILE`：`default` 或 `cn`；设为 `cn` 时自动切换到中国可用镜像源（可被手动变量覆盖）。
 - `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
-- `RELEASE_BUNDLE_GLOB`：一体化发布包仅打入匹配该通配符的镜像包（默认 `qwen3_coder_next_stack.tar*`，避免重复打入历史大包影响速度）。
+- `RELEASE_BUNDLE_MODE`：一体化发布包打包模式，`zst|tar|both`，默认 `zst`（优先体积更小）。
+- `RELEASE_BUNDLE_GLOB`：可选通配符；设置后优先于 `RELEASE_BUNDLE_MODE`。
 
 ## 安全策略
 
@@ -354,9 +355,18 @@ bash deploy/scripts/build_offline_bundle.sh
 
 ### 反复打包速度优化（dist 目录大文件）
 
-`make_portable_release.sh` 新版默认只会把 `deploy/dist` 下匹配 `RELEASE_BUNDLE_GLOB` 的镜像包带入一体化发布包（默认 `qwen3_coder_next_stack.tar*`），避免把历史 `llm_offline_release.tar.gz`、旧 tar 包反复再打包。
+`make_portable_release.sh` 默认只打入 `*.tar.zst`（`RELEASE_BUNDLE_MODE=zst`），避免把历史 `llm_offline_release.tar.gz`、旧 tar 包反复再打包。
 
-如需指定其他产物：
+可配置模式：
+
+```bash
+export RELEASE_BUNDLE_MODE=zst   # 默认：仅 *.tar.zst
+# export RELEASE_BUNDLE_MODE=tar # 仅 *.tar
+# export RELEASE_BUNDLE_MODE=both # 同时打 *.tar.zst 和 *.tar
+bash deploy/scripts/make_portable_release.sh
+```
+
+也可按通配符精确选择（优先级高于模式）：
 
 ```bash
 export RELEASE_BUNDLE_GLOB='qwen3_coder_next_stack.tar.zst'
