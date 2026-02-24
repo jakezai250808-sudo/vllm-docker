@@ -235,6 +235,17 @@ conda run -n llm-offline-hf python -m pip install huggingface_hub
 
 说明：`huggingface_hub>=1.x` 已使用 `hf` 命令并逐步替代 `huggingface-cli`；本项目脚本已改为直接调用 Python API（`snapshot_download`），不再依赖具体 CLI 名称。
 
+### inference 容器反复 Restarting (127)
+
+常见原因是容器入口脚本解释器不兼容（例如镜像里没有 `bash`）。当前版本已改为 POSIX `sh` 入口脚本。若仍失败，请先查看：
+
+```bash
+docker logs --tail 200 inference
+docker inspect inference --format '{{.State.ExitCode}}'
+```
+
+如果 ExitCode 仍是 `127`，通常是命令不存在；请确认镜像构建是否使用了最新仓库内容并重新构建离线包。
+
 ### 502 Bad Gateway
 
 - inference 未启动或尚未 ready。
