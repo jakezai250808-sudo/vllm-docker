@@ -53,6 +53,7 @@ cp deploy/.env.example deploy/.env
 - `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（`ZSTD_THREADS=0` 表示自动用多核）。
 - `MIRROR_PROFILE`：`default` 或 `cn`；设为 `cn` 时自动切换到中国可用镜像源（可被手动变量覆盖）。
 - `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
+- `RELEASE_BUNDLE_GLOB`：一体化发布包仅打入匹配该通配符的镜像包（默认 `qwen3_coder_next_stack.tar*`，避免重复打入历史大包影响速度）。
 
 ## 安全策略
 
@@ -349,3 +350,22 @@ bash deploy/scripts/build_offline_bundle.sh
 ```
 
 说明：压缩级别越高体积更小但更慢（默认 19）。
+
+
+### 反复打包速度优化（dist 目录大文件）
+
+`make_portable_release.sh` 新版默认只会把 `deploy/dist` 下匹配 `RELEASE_BUNDLE_GLOB` 的镜像包带入一体化发布包（默认 `qwen3_coder_next_stack.tar*`），避免把历史 `llm_offline_release.tar.gz`、旧 tar 包反复再打包。
+
+如需指定其他产物：
+
+```bash
+export RELEASE_BUNDLE_GLOB='qwen3_coder_next_stack.tar.zst'
+bash deploy/scripts/make_portable_release.sh
+```
+
+如需清理历史文件进一步提速：
+
+```bash
+find deploy/dist -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.old' \) -delete
+```
+
