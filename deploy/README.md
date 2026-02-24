@@ -88,7 +88,7 @@ export https_proxy=http://proxy.corp.local:7890
 bash deploy/scripts/build_offline_bundle.sh
 ```
 
-该脚本会先创建/复用 Conda 环境（默认 `llm-offline-hf`），并在该环境中安装 `huggingface_hub[cli]`，避免污染系统 Python。
+该脚本会先创建/复用 Conda 环境（默认 `llm-offline-hf`），并在该环境中安装 `huggingface_hub`，再通过 Python API 下载模型，避免污染系统 Python。
 
 该脚本会：
 
@@ -180,12 +180,11 @@ curl http://<SERVER_IP>:8080/v1/chat/completions \
 bash deploy/scripts/run_gateway.sh
 ```
 
-### huggingface-cli / huggingface_hub 缺失
+### huggingface_hub 缺失
 
 如果遇到报错：
 
 ```text
-from huggingface_hub.commands.huggingface_cli import main
 ModuleNotFoundError: No module named 'huggingface_hub'
 ```
 
@@ -193,10 +192,12 @@ ModuleNotFoundError: No module named 'huggingface_hub'
 
 ```bash
 conda create -y -n llm-offline-hf python=3.10
-conda run -n llm-offline-hf python -m pip install "huggingface_hub[cli]"
+conda run -n llm-offline-hf python -m pip install huggingface_hub
 ```
 
 如果公司环境禁用了 conda/pip 出网，请让管理员在内网镜像源中预装该依赖，或将 wheel 包离线导入该 conda 环境。
+
+说明：`huggingface_hub>=1.x` 已使用 `hf` 命令并逐步替代 `huggingface-cli`；本项目脚本已改为直接调用 Python API（`snapshot_download`），不再依赖具体 CLI 名称。
 
 ### 502 Bad Gateway
 

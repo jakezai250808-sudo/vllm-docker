@@ -17,7 +17,7 @@ require_docker
 require_cmd conda
 mkdir -p "${MODEL_DIR}" "${DIST_DIR}" "${TMP_DIR}"
 
-ensure_hf_cli_in_conda_env() {
+ensure_hf_python_deps_in_conda_env() {
   if conda env list | awk '{print $1}' | rg -x "${HF_CONDA_ENV}" >/dev/null 2>&1; then
     log "Conda env ${HF_CONDA_ENV} already exists"
   else
@@ -28,20 +28,26 @@ ensure_hf_cli_in_conda_env() {
   if conda run -n "${HF_CONDA_ENV}" python -c "import huggingface_hub" >/dev/null 2>&1; then
     log "huggingface_hub already installed in ${HF_CONDA_ENV}"
   else
-    log "Installing huggingface_hub[cli] into conda env ${HF_CONDA_ENV}"
-    conda run -n "${HF_CONDA_ENV}" python -m pip install "huggingface_hub[cli]"
+    log "Installing huggingface_hub in conda env ${HF_CONDA_ENV}"
+    conda run -n "${HF_CONDA_ENV}" python -m pip install huggingface_hub
   fi
-
-  conda run -n "${HF_CONDA_ENV}" huggingface-cli --help >/dev/null
 }
 
-ensure_hf_cli_in_conda_env
+download_model_via_python_api() {
+  log "Downloading model ${MODEL_ID} into ${MODEL_DIR} (via conda env ${HF_CONDA_ENV})"
+  conda run -n "${HF_CONDA_ENV}" python - <<PY
+from huggingface_hub import snapshot_download
+snapshot_download(
+    repo_id="${MODEL_ID}",
+    local_dir="${MODEL_DIR}",
+    local_dir_use_symlinks=False,
+)
+print("Model download completed: ${MODEL_DIR}")
+PY
+}
 
-log "Downloading model ${MODEL_ID} into ${MODEL_DIR} (via conda env ${HF_CONDA_ENV})"
-conda run -n "${HF_CONDA_ENV}" huggingface-cli download \
-  "${MODEL_ID}" \
-  --local-dir "${MODEL_DIR}" \
-  --local-dir-use-symlinks False
+ensure_hf_python_deps_in_conda_env
+download_model_via_python_api
 
 log "Pulling gateway image ${IMAGE_GATEWAY}"
 docker pull "${IMAGE_GATEWAY}"
