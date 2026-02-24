@@ -47,6 +47,9 @@ cp deploy/.env.example deploy/.env
 - `IMAGE_INFERENCE` / `IMAGE_GATEWAY`：镜像名。
 - `ENABLE_RATE_LIMIT`：`off`（默认）或 `on`。
 - `HF_CONDA_ENV` / `HF_CONDA_PYTHON`：离线打包时用于下载模型的 Conda 隔离环境参数。
+- `VLLM_BASE_IMAGE`：vLLM 基础镜像（可改为企业镜像仓库地址）。
+- `DOCKER_PULL_RETRIES` / `DOCKER_PULL_RETRY_WAIT`：`docker pull` 重试次数与间隔。
+- `SKIP_GATEWAY_PULL` / `SKIP_VLLM_BASE_PULL`：设为 `1` 时跳过拉取，直接使用本地已加载镜像。
 
 ## 安全策略
 
@@ -93,7 +96,7 @@ bash deploy/scripts/build_offline_bundle.sh
 该脚本会：
 
 - 下载 `Qwen/Qwen3-Coder-Next` 到 `deploy/assets/models/Qwen3-Coder-Next`
-- 构建 inference 镜像：`corp/qwen3-coder-next-vllm:offline`
+- 构建 inference 镜像：`corp/qwen3-coder-next-vllm:offline`（支持 `VLLM_BASE_IMAGE` 指定镜像源）
 - 拉取 nginx 镜像：`nginx:stable`
 - `docker save` 输出到 `deploy/dist/qwen3_coder_next_stack.tar`
 - 若系统有 `zstd`，额外生成 `.tar.zst`
@@ -231,3 +234,39 @@ docker exec -it llm-gateway getent hosts inference
 docker logs -f inference
 docker logs -f llm-gateway
 ```
+
+
+### Docker Hub 拉取超时（Gateway Time-out）
+
+如果遇到：
+
+```text
+Get "https://registry-1.docker.io/v2/": Gateway Time-out
+```
+
+建议按优先级处理：
+
+1. 增加重试（脚本已内置）并调大参数：
+
+```bash
+export DOCKER_PULL_RETRIES=6
+export DOCKER_PULL_RETRY_WAIT=20
+```
+
+2. 使用企业镜像源替代默认镜像：
+
+```bash
+export VLLM_BASE_IMAGE=<your-mirror>/vllm/vllm-openai:latest
+export IMAGE_GATEWAY=<your-mirror>/nginx:stable
+```
+
+3. 预加载镜像并跳过拉取：
+
+```bash
+docker load -i preloaded_images.tar
+export SKIP_GATEWAY_PULL=1
+export SKIP_VLLM_BASE_PULL=1
+```
+
+4. 若公司网络策略要求代理，先配置 `HTTP_PROXY/HTTPS_PROXY` 给 Docker daemon。
+
