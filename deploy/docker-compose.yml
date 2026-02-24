@@ -1,0 +1,74 @@
+version: '3.9'
+
+services:
+  inference:
+    image: corp/qwen3-coder-next-vllm:offline
+    container_name: qwen3-coder-next-inference
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TP: ${TP:-2}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-65536}
+      DTYPE: ${DTYPE:-auto}
+      PORT: ${INFERENCE_PORT:-8000}
+      CUDA_VISIBLE_DEVICES: ${CUDA_VISIBLE_DEVICES:-all}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${INFERENCE_PORT:-8000}/v1/models >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    expose:
+      - "${INFERENCE_PORT:-8000}"
+    gpus: all
+    networks:
+      - llm_internal
+
+  gateway:
+    image: corp/nginx-offline-gateway:1.27
+    container_name: qwen3-coder-next-gateway
+    restart: unless-stopped
+    depends_on:
+      inference:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      API_KEY: ${API_KEY}
+      MAX_BODY_SIZE: ${MAX_BODY_SIZE:-50m}
+      INFERENCE_UPSTREAM: inference:${INFERENCE_PORT:-8000}
+      ALLOWLIST: ${ALLOWLIST:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10}
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-20r/s}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-60}
+      GATEWAY_PORT: ${GATEWAY_PORT:-8080}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        mkdir -p /etc/nginx/conf.d
+        : > /etc/nginx/conf.d/allowlist.conf
+        OLDIFS="$$IFS"; IFS=','
+        for cidr in $$ALLOWLIST; do
+          cidr_trim=$$(echo "$$cidr" | xargs)
+          [ -n "$$cidr_trim" ] && echo "allow $$cidr_trim;" >> /etc/nginx/conf.d/allowlist.conf
+        done
+        IFS="$$OLDIFS"
+        echo "deny all;" >> /etc/nginx/conf.d/allowlist.conf
+        envsubst '$$API_KEY $$MAX_BODY_SIZE $$INFERENCE_UPSTREAM $$RATE_LIMIT_RPS $$RATE_LIMIT_BURST $$GATEWAY_PORT' \
+          < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf
+        envsubst '$$GATEWAY_PORT $$INFERENCE_UPSTREAM' \
+          < /etc/nginx/templates/conf.d/api.conf.template > /etc/nginx/conf.d/api.conf
+        nginx -g 'daemon off;'
+    ports:
+      - "${GATEWAY_PORT:-8080}:${GATEWAY_PORT:-8080}"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/templates/nginx.conf.template:ro
+      - ./nginx/conf.d/api.conf:/etc/nginx/templates/conf.d/api.conf.template:ro
+    networks:
+      - llm_internal
+
+networks:
+  llm_internal:
+    driver: bridge
