@@ -132,6 +132,19 @@ bash deploy/scripts/load_and_run.sh
 
 该脚本会自动：`docker load` -> 启动 inference -> 启动 gateway -> 打印状态。
 
+## 本机快速验证（不压缩/不解压）
+
+如果你只想在本机验证镜像运行效果，不走 `tar/zst` 打包与解压，直接运行：
+
+```bash
+bash deploy/scripts/test_local_run.sh
+```
+
+说明：
+- 直接本机构建 `IMAGE_INFERENCE` 并启动 inference + gateway。
+- 默认会做 CPU 冒烟测试（若未设置 `ENABLE_GPU`，脚本会设为 `0`）。
+- 如需只构建不启动：`RUN_STACK=0 bash deploy/scripts/test_local_run.sh`
+
 
 ## 一体化发布包（服务器无仓库代码）
 
