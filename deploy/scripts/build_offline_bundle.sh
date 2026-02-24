@@ -58,7 +58,7 @@ retry_docker_pull() {
 }
 
 ensure_hf_python_deps_in_conda_env() {
-  if conda env list | awk '{print $1}' | rg -x "${HF_CONDA_ENV}" >/dev/null 2>&1; then
+  if conda env list | awk '{print $1}' | grep -Fx "${HF_CONDA_ENV}" >/dev/null 2>&1; then
     log "Conda env ${HF_CONDA_ENV} already exists"
   else
     log "Creating conda env ${HF_CONDA_ENV} (python=${HF_CONDA_PYTHON})"

@@ -59,7 +59,7 @@ ensure_image() {
 
 remove_container_if_exists() {
   local container="$1"
-  if docker ps -a --format '{{.Names}}' | rg -x "${container}" >/dev/null 2>&1; then
+  if docker ps -a --format '{{.Names}}' | grep -Fx "${container}" >/dev/null 2>&1; then
     log "Removing existing container ${container}"
     docker rm -f "${container}" >/dev/null
   fi
