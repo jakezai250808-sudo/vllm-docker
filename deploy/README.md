@@ -238,6 +238,17 @@ conda run -n llm-offline-hf python -m pip install huggingface_hub
 
 说明：`huggingface_hub>=1.x` 已使用 `hf` 命令并逐步替代 `huggingface-cli`；本项目脚本已改为直接调用 Python API（`snapshot_download`），不再依赖具体 CLI 名称。
 
+
+### inference 日志提示 `exec: python: not found`
+
+说明镜像内只有 `python3`（没有 `python` 软链接）或 Python 不在 PATH。当前版本入口脚本会自动优先使用 `python3`，再回退 `python`。
+
+若仍报错，请检查镜像版本是否为最新并重新构建离线包：
+
+```bash
+bash deploy/scripts/build_offline_bundle.sh
+```
+
 ### inference 容器反复 Restarting (127)
 
 常见原因是容器入口脚本解释器不兼容（例如镜像里没有 `bash`）。当前版本已改为 POSIX `sh` 入口脚本。若仍失败，请先查看：
