@@ -37,6 +37,6 @@ if [[ -z "${API_KEY:-}" ]]; then
   exit 1
 fi
 
-"${SCRIPT_DIR}/run_inference.sh"
-"${SCRIPT_DIR}/run_gateway.sh"
-"${SCRIPT_DIR}/status.sh"
+bash "${SCRIPT_DIR}/run_inference.sh"
+bash "${SCRIPT_DIR}/run_gateway.sh"
+bash "${SCRIPT_DIR}/status.sh"

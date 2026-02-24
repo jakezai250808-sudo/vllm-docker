@@ -39,6 +39,7 @@ if [[ ! -f .env ]]; then
   exit 1
 fi
 
+chmod +x scripts/*.sh || true
 bash scripts/load_and_run.sh
 RUNNER
 chmod +x "${RELEASE_ROOT_DIR}/run_on_server.sh"
