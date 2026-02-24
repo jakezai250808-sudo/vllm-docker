@@ -1,5 +1,16 @@
 FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
 
+ARG HTTP_PROXY=http://127.0.0.1:3128
+ARG HTTPS_PROXY=http://127.0.0.1:3128
+ARG NO_PROXY=127.0.0.1,localhost
+
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    no_proxy=${NO_PROXY} \
+    HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    NO_PROXY=${NO_PROXY}
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     PYTHONDONTWRITEBYTECODE=1 \
