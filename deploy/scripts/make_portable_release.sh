@@ -9,9 +9,14 @@ require_cmd tar
 
 DIST_DIR="${DEPLOY_DIR}/dist"
 RELEASE_NAME="${RELEASE_NAME:-llm_offline_release}"
-RELEASE_TMP_DIR="${DIST_DIR}/.release_tmp"
+RELEASE_TMP_DIR="$(mktemp -d -t llm_offline_release_XXXXXX)"
 RELEASE_ROOT_DIR="${RELEASE_TMP_DIR}/${RELEASE_NAME}"
 RELEASE_ARCHIVE="${DIST_DIR}/${RELEASE_NAME}.tar.gz"
+
+cleanup() {
+  rm -rf "${RELEASE_TMP_DIR}"
+}
+trap cleanup EXIT
 
 shopt -s nullglob
 bundle_files=("${DIST_DIR}"/*.tar "${DIST_DIR}"/*.tar.zst)
@@ -20,11 +25,17 @@ if [[ ${#bundle_files[@]} -eq 0 ]]; then
   exit 1
 fi
 
-rm -rf "${RELEASE_TMP_DIR}"
 mkdir -p "${RELEASE_ROOT_DIR}"
 
 log "Preparing portable release structure"
-cp -a "${DEPLOY_DIR}" "${RELEASE_ROOT_DIR}/deploy"
+mkdir -p "${RELEASE_ROOT_DIR}/deploy"
+(
+  cd "${DEPLOY_DIR}"
+  tar --exclude='dist/.release_tmp' -cf - .
+) | (
+  cd "${RELEASE_ROOT_DIR}/deploy"
+  tar -xf -
+)
 
 cat > "${RELEASE_ROOT_DIR}/run_on_server.sh" <<'RUNNER'
 #!/usr/bin/env bash
