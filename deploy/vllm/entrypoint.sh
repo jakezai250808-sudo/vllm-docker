@@ -7,6 +7,13 @@ MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
 DTYPE="${DTYPE:-auto}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
+
+# If user passes a custom command to `docker run <image> ...`, run it directly.
+# This avoids forwarding debug commands into vLLM api_server arguments.
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
+
 if command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 elif command -v python >/dev/null 2>&1; then

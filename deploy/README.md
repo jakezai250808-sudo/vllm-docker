@@ -239,6 +239,18 @@ conda run -n llm-offline-hf python -m pip install huggingface_hub
 说明：`huggingface_hub>=1.x` 已使用 `hf` 命令并逐步替代 `huggingface-cli`；本项目脚本已改为直接调用 Python API（`snapshot_download`），不再依赖具体 CLI 名称。
 
 
+### `api_server.py: error: unrecognized arguments: sh -lc ...`
+
+这是因为给 `docker run <image> ...` 传了自定义命令参数，但入口脚本把它当成 vLLM 参数转发了。
+
+当前版本已支持：如果你在 `docker run` 后附带命令（例如 `sh -lc ...`），入口脚本会直接执行该命令，不再转发到 `api_server`。
+
+调试示例：
+
+```bash
+docker run --rm <your-inference-image> sh -lc 'command -v python3 || true; command -v python || true; python3 --version || true; python --version || true'
+```
+
 ### inference 日志提示 `exec: python: not found`
 
 说明镜像内只有 `python3`（没有 `python` 软链接）或 Python 不在 PATH。当前版本入口脚本会自动优先使用 `python3`，再回退 `python`。
