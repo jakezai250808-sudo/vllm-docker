@@ -17,6 +17,8 @@ DOCKER_PULL_RETRIES="${DOCKER_PULL_RETRIES:-3}"
 DOCKER_PULL_RETRY_WAIT="${DOCKER_PULL_RETRY_WAIT:-10}"
 SKIP_GATEWAY_PULL="${SKIP_GATEWAY_PULL:-0}"
 SKIP_VLLM_BASE_PULL="${SKIP_VLLM_BASE_PULL:-0}"
+ZSTD_LEVEL="${ZSTD_LEVEL:-19}"
+ZSTD_THREADS="${ZSTD_THREADS:-0}"
 MIRROR_PROFILE="${MIRROR_PROFILE:-default}"
 CN_IMAGE_GATEWAY="${CN_IMAGE_GATEWAY:-docker.m.daocloud.io/library/nginx:stable}"
 CN_VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE:-docker.m.daocloud.io/vllm/vllm-openai:latest}"
@@ -127,7 +129,7 @@ cp "${TMP_DIR}/images.tar" "${BUNDLE_TAR}"
 
 if command -v zstd >/dev/null 2>&1; then
   log "Compressing bundle with zstd"
-  zstd -f -19 "${BUNDLE_TAR}" -o "${BUNDLE_TAR}.zst"
+  zstd -f -"${ZSTD_LEVEL}" -T"${ZSTD_THREADS}" "${BUNDLE_TAR}" -o "${BUNDLE_TAR}.zst"
 else
   log "zstd not found, skipping compression"
 fi

@@ -50,6 +50,7 @@ cp deploy/.env.example deploy/.env
 - `VLLM_BASE_IMAGE`：vLLM 基础镜像（可改为企业镜像仓库地址）。
 - `DOCKER_PULL_RETRIES` / `DOCKER_PULL_RETRY_WAIT`：`docker pull` 重试次数与间隔。
 - `SKIP_GATEWAY_PULL` / `SKIP_VLLM_BASE_PULL`：设为 `1` 时跳过拉取，直接使用本地已加载镜像。
+- `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（`ZSTD_THREADS=0` 表示自动用多核）。
 - `MIRROR_PROFILE`：`default` 或 `cn`；设为 `cn` 时自动切换到中国可用镜像源（可被手动变量覆盖）。
 - `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
 
@@ -336,3 +337,15 @@ export IMAGE_GATEWAY=<your-registry>/library/nginx:stable
 export VLLM_BASE_IMAGE=<your-registry>/vllm/vllm-openai:latest
 ```
 
+
+### zstd 压缩加速（多核）
+
+默认已支持多核压缩，可通过环境变量调整：
+
+```bash
+export ZSTD_THREADS=0   # 0=自动使用全部可用 CPU 线程
+export ZSTD_LEVEL=15    # 降低压缩级别可显著提速
+bash deploy/scripts/build_offline_bundle.sh
+```
+
+说明：压缩级别越高体积更小但更慢（默认 19）。
