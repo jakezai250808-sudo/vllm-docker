@@ -21,8 +21,6 @@ ZSTD_LEVEL="${ZSTD_LEVEL:-19}"
 ZSTD_THREADS="${ZSTD_THREADS:-0}"
 MIRROR_PROFILE="${MIRROR_PROFILE:-default}"
 CLEANUP_LOCAL_IMAGES="${CLEANUP_LOCAL_IMAGES:-1}"
-CLEANUP_BASE_IMAGE="${CLEANUP_BASE_IMAGE:-0}"
-CLEANUP_PRUNE_DANGLING="${CLEANUP_PRUNE_DANGLING:-1}"
 CN_IMAGE_GATEWAY="${CN_IMAGE_GATEWAY:-docker.m.daocloud.io/library/nginx:stable}"
 CN_VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE:-docker.m.daocloud.io/vllm/vllm-openai:latest}"
 
@@ -82,17 +80,10 @@ cleanup_local_images() {
     return 0
   fi
 
-  log "Cleaning local images to reduce disk usage"
+  log "Cleaning generated local images to reduce disk usage"
   docker image rm -f "${IMAGE_INFERENCE}" >/dev/null 2>&1 || true
-  docker image rm -f "${IMAGE_GATEWAY}" >/dev/null 2>&1 || true
 
-  if [[ "${CLEANUP_BASE_IMAGE}" == "1" ]]; then
-    docker image rm -f "${VLLM_BASE_IMAGE}" >/dev/null 2>&1 || true
-  fi
-
-  if [[ "${CLEANUP_PRUNE_DANGLING}" == "1" ]]; then
-    docker image prune -f >/dev/null 2>&1 || true
-  fi
+  log "Keep base/gateway images for reuse: ${VLLM_BASE_IMAGE}, ${IMAGE_GATEWAY}"
 }
 
 download_model_via_python_api() {
