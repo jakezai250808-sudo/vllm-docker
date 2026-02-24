@@ -50,6 +50,8 @@ cp deploy/.env.example deploy/.env
 - `VLLM_BASE_IMAGE`：vLLM 基础镜像（可改为企业镜像仓库地址）。
 - `DOCKER_PULL_RETRIES` / `DOCKER_PULL_RETRY_WAIT`：`docker pull` 重试次数与间隔。
 - `SKIP_GATEWAY_PULL` / `SKIP_VLLM_BASE_PULL`：设为 `1` 时跳过拉取，直接使用本地已加载镜像。
+- `MIRROR_PROFILE`：`default` 或 `cn`；设为 `cn` 时自动切换到中国可用镜像源（可被手动变量覆盖）。
+- `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
 
 ## 安全策略
 
@@ -269,4 +271,26 @@ export SKIP_VLLM_BASE_PULL=1
 ```
 
 4. 若公司网络策略要求代理，先配置 `HTTP_PROXY/HTTPS_PROXY` 给 Docker daemon。
+
+
+### 中国可用镜像源（建议）
+
+如果办公电脑访问 Docker Hub 不稳定，可直接启用中国镜像配置：
+
+```bash
+export MIRROR_PROFILE=cn
+bash deploy/scripts/build_offline_bundle.sh
+```
+
+默认会切到：
+
+- `docker.m.daocloud.io/library/nginx:stable`
+- `docker.m.daocloud.io/vllm/vllm-openai:latest`
+
+如果你们公司有自建镜像仓库，建议显式覆盖：
+
+```bash
+export IMAGE_GATEWAY=<your-registry>/library/nginx:stable
+export VLLM_BASE_IMAGE=<your-registry>/vllm/vllm-openai:latest
+```
 

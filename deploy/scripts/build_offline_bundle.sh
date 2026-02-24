@@ -17,6 +17,19 @@ DOCKER_PULL_RETRIES="${DOCKER_PULL_RETRIES:-3}"
 DOCKER_PULL_RETRY_WAIT="${DOCKER_PULL_RETRY_WAIT:-10}"
 SKIP_GATEWAY_PULL="${SKIP_GATEWAY_PULL:-0}"
 SKIP_VLLM_BASE_PULL="${SKIP_VLLM_BASE_PULL:-0}"
+MIRROR_PROFILE="${MIRROR_PROFILE:-default}"
+CN_IMAGE_GATEWAY="${CN_IMAGE_GATEWAY:-docker.m.daocloud.io/library/nginx:stable}"
+CN_VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE:-docker.m.daocloud.io/vllm/vllm-openai:latest}"
+
+if [[ "${MIRROR_PROFILE}" == "cn" ]]; then
+  if [[ "${IMAGE_GATEWAY}" == "nginx:stable" ]]; then
+    IMAGE_GATEWAY="${CN_IMAGE_GATEWAY}"
+  fi
+  if [[ "${VLLM_BASE_IMAGE}" == "vllm/vllm-openai:latest" ]]; then
+    VLLM_BASE_IMAGE="${CN_VLLM_BASE_IMAGE}"
+  fi
+  log "MIRROR_PROFILE=cn enabled: IMAGE_GATEWAY=${IMAGE_GATEWAY}, VLLM_BASE_IMAGE=${VLLM_BASE_IMAGE}"
+fi
 
 require_docker
 require_cmd conda
