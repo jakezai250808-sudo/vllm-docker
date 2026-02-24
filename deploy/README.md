@@ -46,6 +46,7 @@ cp deploy/.env.example deploy/.env
 - `CUDA_VISIBLE_DEVICES`：可空，用于限制 GPU。
 - `IMAGE_INFERENCE` / `IMAGE_GATEWAY`：镜像名。
 - `ENABLE_RATE_LIMIT`：`off`（默认）或 `on`。
+- `HF_CONDA_ENV` / `HF_CONDA_PYTHON`：离线打包时用于下载模型的 Conda 隔离环境参数。
 
 ## 安全策略
 
@@ -86,6 +87,8 @@ export https_proxy=http://proxy.corp.local:7890
 ```bash
 bash deploy/scripts/build_offline_bundle.sh
 ```
+
+该脚本会先创建/复用 Conda 环境（默认 `llm-offline-hf`），并在该环境中安装 `huggingface_hub[cli]`，避免污染系统 Python。
 
 该脚本会：
 
@@ -186,14 +189,14 @@ from huggingface_hub.commands.huggingface_cli import main
 ModuleNotFoundError: No module named 'huggingface_hub'
 ```
 
-处理方式：
+新版 `build_offline_bundle.sh` 不再向系统 Python 安装依赖，而是使用 Conda 隔离环境：
 
 ```bash
-python3 -m pip install --user "huggingface_hub[cli]"
-export PATH="$(python3 -m site --user-base)/bin:$PATH"
+conda create -y -n llm-offline-hf python=3.10
+conda run -n llm-offline-hf python -m pip install "huggingface_hub[cli]"
 ```
 
-新版 `build_offline_bundle.sh` 已自动尝试安装；若企业终端限制 `pip` 安装，请联系管理员预装该依赖。
+如果公司环境禁用了 conda/pip 出网，请让管理员在内网镜像源中预装该依赖，或将 wheel 包离线导入该 conda 环境。
 
 ### 502 Bad Gateway
 

@@ -10,43 +10,38 @@ MODEL_DIR="${DEPLOY_DIR}/assets/models/Qwen3-Coder-Next"
 DIST_DIR="${DEPLOY_DIR}/dist"
 BUNDLE_TAR="${DIST_DIR}/qwen3_coder_next_stack.tar"
 TMP_DIR="${DIST_DIR}/tmp"
+HF_CONDA_ENV="${HF_CONDA_ENV:-llm-offline-hf}"
+HF_CONDA_PYTHON="${HF_CONDA_PYTHON:-3.10}"
 
 require_docker
-require_cmd python3
-
-ensure_huggingface_cli() {
-  if command -v huggingface-cli >/dev/null 2>&1; then
-    return 0
-  fi
-
-  if ! python3 -m pip --version >/dev/null 2>&1; then
-    log "pip for python3 not found, trying ensurepip"
-    python3 -m ensurepip --upgrade
-  fi
-
-  log "huggingface-cli not found, trying to install huggingface_hub[cli] via pip"
-  python3 -m pip install --user "huggingface_hub[cli]"
-
-  if command -v huggingface-cli >/dev/null 2>&1; then
-    return 0
-  fi
-
-  local user_bin
-  user_bin="$(python3 -m site --user-base)/bin"
-  if [[ -x "${user_bin}/huggingface-cli" ]]; then
-    export PATH="${user_bin}:${PATH}"
-    return 0
-  fi
-
-  echo "huggingface-cli installation failed. Please run: python3 -m pip install --user 'huggingface_hub[cli]'" >&2
-  exit 1
-}
-
-ensure_huggingface_cli
+require_cmd conda
 mkdir -p "${MODEL_DIR}" "${DIST_DIR}" "${TMP_DIR}"
 
-log "Downloading model ${MODEL_ID} into ${MODEL_DIR}"
-huggingface-cli download "${MODEL_ID}" --local-dir "${MODEL_DIR}" --local-dir-use-symlinks False
+ensure_hf_cli_in_conda_env() {
+  if conda env list | awk '{print $1}' | rg -x "${HF_CONDA_ENV}" >/dev/null 2>&1; then
+    log "Conda env ${HF_CONDA_ENV} already exists"
+  else
+    log "Creating conda env ${HF_CONDA_ENV} (python=${HF_CONDA_PYTHON})"
+    conda create -y -n "${HF_CONDA_ENV}" "python=${HF_CONDA_PYTHON}"
+  fi
+
+  if conda run -n "${HF_CONDA_ENV}" python -c "import huggingface_hub" >/dev/null 2>&1; then
+    log "huggingface_hub already installed in ${HF_CONDA_ENV}"
+  else
+    log "Installing huggingface_hub[cli] into conda env ${HF_CONDA_ENV}"
+    conda run -n "${HF_CONDA_ENV}" python -m pip install "huggingface_hub[cli]"
+  fi
+
+  conda run -n "${HF_CONDA_ENV}" huggingface-cli --help >/dev/null
+}
+
+ensure_hf_cli_in_conda_env
+
+log "Downloading model ${MODEL_ID} into ${MODEL_DIR} (via conda env ${HF_CONDA_ENV})"
+conda run -n "${HF_CONDA_ENV}" huggingface-cli download \
+  "${MODEL_ID}" \
+  --local-dir "${MODEL_DIR}" \
+  --local-dir-use-symlinks False
 
 log "Pulling gateway image ${IMAGE_GATEWAY}"
 docker pull "${IMAGE_GATEWAY}"
