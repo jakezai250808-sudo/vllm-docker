@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1.0-runtime-ubuntu20.04
 
 ARG HTTP_PROXY=http://127.0.0.1:3128
 ARG HTTPS_PROXY=http://127.0.0.1:3128
@@ -19,7 +19,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 \
+    python3 \
     python3-pip \
     python3-dev \
     ca-certificates \
