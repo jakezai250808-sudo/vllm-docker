@@ -108,6 +108,32 @@ run_gpu_smoke_inference_image() {
   "${cmd[@]}" 2>/dev/null | grep -q '^True$'
 }
 
+preflight_inference_image_with_mode() {
+  local mode="$1"
+  local -a cmd=(docker run --rm)
+
+  if [[ "${mode}" == "gpus" ]]; then
+    cmd+=(--gpus all)
+  elif [[ "${mode}" == "runtime" ]]; then
+    cmd+=(--runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=compute,utility)
+  fi
+
+  if [[ -n "${CUDA_VISIBLE_DEVICES}" && "${mode}" != "none" ]]; then
+    cmd+=( -e "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}" )
+  fi
+
+  cmd+=(--entrypoint /bin/sh "${INFERENCE_IMAGE}" -c 'exit 0')
+
+  if "${cmd[@]}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  error "Inference image GPU preflight failed for GPU_MODE=${mode}."
+  error "This usually means host driver is too old for image CUDA requirements (e.g. unsatisfied condition: cuda>=X.Y)."
+  error "Fix options: (1) update NVIDIA driver; (2) use an inference image built on an earlier CUDA base; (3) set ENABLE_GPU=0 for CPU mode."
+  return 1
+}
+
 detect_gpu_mode() {
   local mode="none"
 
@@ -226,6 +252,11 @@ fi
 
 remove_container_if_exists "${INFERENCE_CONTAINER_NAME}"
 GPU_MODE="$(detect_gpu_mode)"
+
+if [[ "${GPU_MODE}" != "none" ]]; then
+  preflight_inference_image_with_mode "${GPU_MODE}"
+fi
+
 remove_container_if_exists "${INFERENCE_CONTAINER_NAME}"
 start_inference_container "${GPU_MODE}"
 bash "${SCRIPT_DIR}/run_gateway.sh"
