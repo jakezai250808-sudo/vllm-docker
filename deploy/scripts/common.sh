@@ -14,6 +14,11 @@ NETWORK_NAME="${NETWORK_NAME:-llm-net}"
 INFERENCE_CONTAINER_NAME="${INFERENCE_CONTAINER_NAME:-inference}"
 GATEWAY_CONTAINER_NAME="${GATEWAY_CONTAINER_NAME:-llm-gateway}"
 IMAGE_INFERENCE="${IMAGE_INFERENCE:-corp/qwen3-coder-next-vllm:cu121}"
+LEGACY_IMAGE_INFERENCE="corp/qwen3-coder-next-vllm:offline"
+if [[ "${IMAGE_INFERENCE}" == "${LEGACY_IMAGE_INFERENCE}" ]]; then
+  echo "[WARN] IMAGE_INFERENCE still points to legacy tag ${LEGACY_IMAGE_INFERENCE}; overriding to corp/qwen3-coder-next-vllm:cu121. Update deploy/.env to avoid this warning." >&2
+  IMAGE_INFERENCE="corp/qwen3-coder-next-vllm:cu121"
+fi
 IMAGE_GATEWAY="${IMAGE_GATEWAY:-nginx:stable}"
 INFERENCE_PORT="${INFERENCE_PORT:-8000}"
 GATEWAY_PORT="${GATEWAY_PORT:-8080}"

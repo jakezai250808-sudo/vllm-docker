@@ -27,3 +27,22 @@ for c in "${INFERENCE_CONTAINER_NAME}" "${GATEWAY_CONTAINER_NAME}"; do
     echo "${c}: not found"
   fi
 done
+
+echo "
+[diagnostics]"
+for c in "${INFERENCE_CONTAINER_NAME}" "${GATEWAY_CONTAINER_NAME}"; do
+  if ! docker inspect "${c}" >/dev/null 2>&1; then
+    continue
+  fi
+
+  state="$(docker inspect "${c}" --format '{{.State.Status}}')"
+  health="$(docker inspect "${c}" --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}')"
+  image="$(docker inspect "${c}" --format '{{.Config.Image}}')"
+  echo "${c}: image=${image} state=${state} health=${health}"
+
+  if [[ "${state}" != "running" || "${health}" == "unhealthy" || "${health}" == "starting" ]]; then
+    echo "--- recent logs: ${c} ---"
+    docker logs --tail 80 "${c}" 2>&1 || true
+    echo "--- end logs: ${c} ---"
+  fi
+done
