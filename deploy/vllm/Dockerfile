@@ -31,14 +31,15 @@ RUN python3 -m pip install --upgrade pip setuptools wheel
 # Pin torch to CUDA 12.1 wheels to avoid drifting to cu124.
 RUN python3 -m pip install \
     --index-url https://download.pytorch.org/whl/cu121 \
-    torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2+cu121
+    torch==2.3.1+cu121 torchvision==0.18.1+cu121 torchaudio==2.3.1+cu121
 
 # Pin a stable vLLM release (no nightly).
-RUN python3 -m pip install vllm==0.5.1
+RUN python3 -m pip install vllm==0.5.1 transformers==4.42.4 lm-format-enforcer==0.10.6
 
 # Build-time self-checks to ensure image stays on CUDA 12.1 and expected vLLM.
 RUN python3 -c "import torch; print(torch.__version__, torch.version.cuda); assert torch.version.cuda and torch.version.cuda.startswith('12.1')"
 RUN python3 -c "import vllm; print(vllm.__version__)"
+RUN python3 -c "from transformers.generation.logits_process import LogitsWarper, PrefixConstrainedLogitsProcessor; print('transformers-logits-ok')"
 
 COPY models/Qwen3-Coder-Next /models/Qwen3-Coder-Next
 COPY entrypoint.sh /entrypoint.sh
