@@ -3,8 +3,8 @@ FROM ${VLLM_BASE_IMAGE}
 
 WORKDIR /app
 
-COPY deploy/assets/models/Qwen3-Coder-Next /models/Qwen3-Coder-Next
-COPY deploy/vllm/entrypoint.sh /entrypoint.sh
+COPY assets/models/Qwen3-Coder-Next /models/Qwen3-Coder-Next
+COPY vllm/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
 

@@ -44,20 +44,19 @@ cp deploy/.env.example deploy/.env
 - `MAX_BODY_SIZE`：默认 `50m`。
 - `TP` / `MAX_MODEL_LEN` / `DTYPE`：vLLM 启动参数。
 - `CUDA_VISIBLE_DEVICES`：可空，用于限制 GPU。
+- `ENABLE_GPU`：默认 `1`；若宿主机未安装 NVIDIA Container Toolkit，可临时设为 `0`（不附加 `--gpus all`）。
 - `IMAGE_INFERENCE` / `IMAGE_GATEWAY`：镜像名。
 - `ENABLE_RATE_LIMIT`：`off`（默认）或 `on`。
 - `HF_CONDA_ENV` / `HF_CONDA_PYTHON`：离线打包时用于下载模型的 Conda 隔离环境参数。
 - `VLLM_BASE_IMAGE`：vLLM 基础镜像（可改为企业镜像仓库地址）。
 - `DOCKER_PULL_RETRIES` / `DOCKER_PULL_RETRY_WAIT`：`docker pull` 重试次数与间隔。
 - `SKIP_GATEWAY_PULL` / `SKIP_VLLM_BASE_PULL`：设为 `1` 时跳过拉取，直接使用本地已加载镜像。
-- `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（`ZSTD_THREADS=0` 表示自动用多核）。
+- `ZSTD_LEVEL` / `ZSTD_THREADS`：zstd 压缩级别与线程数（默认 `ZSTD_LEVEL=6`，`ZSTD_THREADS=0` 表示自动用多核）。
 - `MIRROR_PROFILE`：`default` 或 `cn`；设为 `cn` 时自动切换到中国可用镜像源（可被手动变量覆盖）。
 - `CN_IMAGE_GATEWAY` / `CN_VLLM_BASE_IMAGE`：`MIRROR_PROFILE=cn` 的默认镜像地址。
 - `RELEASE_BUNDLE_MODE`：一体化发布包打包模式，`zst|tar|both`，默认 `zst`（优先体积更小）。
 - `RELEASE_BUNDLE_GLOB`：可选通配符；设置后优先于 `RELEASE_BUNDLE_MODE`。
-- `CLEANUP_LOCAL_IMAGES`：离线包生成后是否删除本地 inference/gateway 镜像（默认 `1`）。
-- `CLEANUP_BASE_IMAGE`：清理时是否删除 `VLLM_BASE_IMAGE`（默认 `0`）。
-- `CLEANUP_PRUNE_DANGLING`：清理时是否执行 `docker image prune -f`（默认 `1`）。
+- `CLEANUP_LOCAL_IMAGES`：离线包生成后是否删除本次构建生成的 `IMAGE_INFERENCE`（默认 `1`）；不会删除 `IMAGE_GATEWAY`（nginx）和 `VLLM_BASE_IMAGE`（vllm/vllm-openai）。
 
 ## 安全策略
 
@@ -132,6 +131,19 @@ bash deploy/scripts/load_and_run.sh
 ```
 
 该脚本会自动：`docker load` -> 启动 inference -> 启动 gateway -> 打印状态。
+
+## 本机快速验证（不压缩/不解压）
+
+如果你只想在本机验证镜像运行效果，不走 `tar/zst` 打包与解压，直接运行：
+
+```bash
+bash deploy/scripts/test_local_run.sh
+```
+
+说明：
+- 直接本机构建 `IMAGE_INFERENCE` 并启动 inference + gateway。
+- 默认会做 CPU 冒烟测试（若未设置 `ENABLE_GPU`，脚本会设为 `0`）。
+- 如需只构建不启动：`RUN_STACK=0 bash deploy/scripts/test_local_run.sh`
 
 
 ## 一体化发布包（服务器无仓库代码）
@@ -412,9 +424,9 @@ find deploy/dist -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.old' \) -de
 
 默认行为：
 
-- 删除 `IMAGE_INFERENCE`、`IMAGE_GATEWAY`
-- 清理 dangling layers（`docker image prune -f`）
-- 默认不删 `VLLM_BASE_IMAGE`（可选开启）
+- 仅删除本次构建生成的 `IMAGE_INFERENCE`
+- 保留 `IMAGE_GATEWAY`（nginx）
+- 保留 `VLLM_BASE_IMAGE`（vllm/vllm-openai）
 
 如需保留本地镜像供后续复用：
 
@@ -423,11 +435,4 @@ export CLEANUP_LOCAL_IMAGES=0
 bash deploy/scripts/build_offline_bundle.sh
 ```
 
-如需更激进清理：
-
-```bash
-export CLEANUP_LOCAL_IMAGES=1
-export CLEANUP_BASE_IMAGE=1
-export CLEANUP_PRUNE_DANGLING=1
-bash deploy/scripts/build_offline_bundle.sh
-```
+如需进一步清理其它镜像，请手动执行对应 `docker image rm`，避免误删复用基础镜像。
