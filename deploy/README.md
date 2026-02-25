@@ -102,6 +102,29 @@ bash deploy/scripts/load_and_run.sh
 
 `load_and_run.sh` 只做 `docker load` + `docker run`，不依赖服务器侧 `docker pull`。
 
+
+## 下载适合 RTX 5000 的小模型（新增）
+
+如果你只想先做功能联通验证（避免大模型占满 16GB 显存），可以先下载小模型：
+
+```bash
+bash deploy/scripts/download_small_model.sh
+```
+
+默认会下载：`Qwen/Qwen2.5-1.5B-Instruct`，并同步到：
+
+- `deploy/assets/models/Qwen2.5-1.5B-Instruct`
+- `deploy/vllm/models/Qwen2.5-1.5B-Instruct`
+
+启动时可指向该模型目录（vLLM entrypoint 支持 `MODEL_PATH`）：
+
+```bash
+docker run --rm --gpus all -p 8000:8000 \
+  -e MODEL_PATH=/models/Qwen2.5-1.5B-Instruct \
+  -e TP=1 -e MAX_MODEL_LEN=4096 \
+  corp/qwen3-coder-next-vllm:cu121
+```
+
 ## 本机一键验证（构建+探测+启动）
 
 ```bash
