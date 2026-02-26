@@ -104,6 +104,42 @@ bash deploy/scripts/load_and_run.sh
 
 
 
+
+## 安装最新版本 IDE（Java + CLion）（新增）
+
+新增脚本：`deploy/scripts/install_latest_ide.sh`
+
+### 预览将执行命令（不安装）
+
+```bash
+bash deploy/scripts/install_latest_ide.sh --dry-run
+```
+
+### 实际安装（Ubuntu）
+
+```bash
+sudo bash deploy/scripts/install_latest_ide.sh
+```
+
+默认行为：
+
+- 安装 Java：`openjdk-21-jdk`
+- 安装 IntelliJ IDEA Community（snap，`stable` channel）
+- 安装 CLion（snap，`stable` channel）
+
+可选参数示例：
+
+```bash
+sudo JAVA_PACKAGE=openjdk-17-jdk IDEA_CHANNEL=latest/stable CLION_CHANNEL=latest/stable \
+  bash deploy/scripts/install_latest_ide.sh
+```
+
+若只安装 CLion（跳过 IDEA）：
+
+```bash
+sudo INSTALL_INTELLIJ_IDEA=0 bash deploy/scripts/install_latest_ide.sh
+```
+
 ## 主机 GPU/驱动环境检测与安装脚本（新增）
 
 新增脚本：`deploy/scripts/setup_nvidia_host.sh`
