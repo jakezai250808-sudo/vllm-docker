@@ -103,6 +103,33 @@ bash deploy/scripts/load_and_run.sh
 `load_and_run.sh` 只做 `docker load` + `docker run`，不依赖服务器侧 `docker pull`。
 
 
+
+## 主机 GPU/驱动环境检测与安装脚本（新增）
+
+新增脚本：`deploy/scripts/setup_nvidia_host.sh`
+
+### 仅检测（推荐先执行）
+
+```bash
+bash deploy/scripts/setup_nvidia_host.sh
+```
+
+### 自动安装（Ubuntu，需 root）
+
+```bash
+sudo MODE=install INSTALL_NVIDIA_TOOLKIT=1 INSTALL_NVIDIA_DRIVER=0 \
+  bash deploy/scripts/setup_nvidia_host.sh
+```
+
+可选：安装指定驱动包（例如 550）：
+
+```bash
+sudo MODE=install INSTALL_NVIDIA_DRIVER=1 NVIDIA_DRIVER_PACKAGE=nvidia-driver-550 \
+  bash deploy/scripts/setup_nvidia_host.sh
+```
+
+> 说明：驱动升级后通常需要重启；脚本会提示执行 `nvidia-smi` 和 Docker `--gpus all` 验证命令。
+
 ## 下载适合 RTX 5000 的小模型（新增）
 
 如果你只想先做功能联通验证（避免大模型占满 16GB 显存），可以先下载小模型：
