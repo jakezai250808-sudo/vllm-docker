@@ -122,6 +122,8 @@ bash deploy/scripts/setup_nvidia_host.sh
 bash deploy/scripts/setup_nvidia_host.sh --mode install --dry-run
 ```
 
+> `--dry-run` 仅预览命令，不会真正安装；因此输出中的驱动/runtime状态仍是“当前主机现状”。
+
 
 ```bash
 sudo MODE=install INSTALL_NVIDIA_TOOLKIT=1 INSTALL_NVIDIA_DRIVER=0 \

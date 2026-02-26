@@ -161,16 +161,21 @@ install_nvidia_container_toolkit() {
   run_cmd apt-get update
   run_cmd apt-get install -y nvidia-container-toolkit
 
-  if command -v nvidia-ctk >/dev/null 2>&1; then
-    run_cmd nvidia-ctk runtime configure --runtime=docker
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    echo "[DRY-RUN] nvidia-ctk runtime configure --runtime=docker"
+    echo "[DRY-RUN] systemctl restart docker"
   else
-    warn "nvidia-ctk command not found after install"
-  fi
+    if command -v nvidia-ctk >/dev/null 2>&1; then
+      run_cmd nvidia-ctk runtime configure --runtime=docker
+    else
+      warn "nvidia-ctk command not found after install"
+    fi
 
-  if command -v systemctl >/dev/null 2>&1; then
-    run_cmd systemctl restart docker || warn "Failed to restart docker via systemctl"
-  else
-    warn "systemctl not available; please restart docker service manually"
+    if command -v systemctl >/dev/null 2>&1; then
+      run_cmd systemctl restart docker || warn "Failed to restart docker via systemctl"
+    else
+      warn "systemctl not available; please restart docker service manually"
+    fi
   fi
 }
 
@@ -198,6 +203,12 @@ run_install_flow() {
   apt_install_basics
   install_nvidia_driver
   install_nvidia_container_toolkit
+
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    info "DRY_RUN=1: installation commands were not executed; skipping post-install verification report."
+    print_next_steps
+    return 0
+  fi
 
   print_hardware_report
   print_next_steps
