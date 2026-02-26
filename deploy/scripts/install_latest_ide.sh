@@ -96,14 +96,14 @@ install_java() {
   fi
 }
 
-install_intellij_idea() {
+install_intellij_idea_ultimate() {
   if [[ "${INSTALL_INTELLIJ_IDEA}" != "1" ]]; then
     info "INSTALL_INTELLIJ_IDEA=${INSTALL_INTELLIJ_IDEA}, skip IntelliJ IDEA"
     return 0
   fi
 
-  info "Installing IntelliJ IDEA Community (${IDEA_CHANNEL}) via snap"
-  run_cmd snap install intellij-idea-community --classic --channel="${IDEA_CHANNEL}"
+  info "Installing IntelliJ IDEA Ultimate (${IDEA_CHANNEL}) via snap"
+  run_cmd snap install intellij-idea-ultimate --classic --channel="${IDEA_CHANNEL}"
 }
 
 install_clion() {
@@ -144,6 +144,6 @@ export DEBIAN_FRONTEND=noninteractive
 
 install_java
 ensure_snapd
-install_intellij_idea
+install_intellij_idea_ultimate
 install_clion
 print_summary

@@ -124,7 +124,7 @@ sudo bash deploy/scripts/install_latest_ide.sh
 默认行为：
 
 - 安装 Java：`openjdk-21-jdk`
-- 安装 IntelliJ IDEA Community（snap，`stable` channel）
+- 安装 IntelliJ IDEA Ultimate（商业版，snap，`stable` channel）
 - 安装 CLion（snap，`stable` channel）
 
 可选参数示例：
