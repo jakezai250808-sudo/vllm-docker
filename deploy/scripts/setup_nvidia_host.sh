@@ -10,6 +10,7 @@ NVIDIA_DRIVER_PACKAGE="${NVIDIA_DRIVER_PACKAGE:-nvidia-driver-550}"
 INSTALL_NVIDIA_TOOLKIT="${INSTALL_NVIDIA_TOOLKIT:-1}"
 INSTALL_NVIDIA_DRIVER="${INSTALL_NVIDIA_DRIVER:-0}"
 SKIP_REBOOT_HINT="${SKIP_REBOOT_HINT:-0}"
+DRY_RUN="${DRY_RUN:-0}"
 
 info() {
   log "[INFO] $*"
@@ -21,6 +22,33 @@ warn() {
 
 error() {
   log "[ERROR] $*" >&2
+}
+
+run_cmd() {
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    echo "[DRY-RUN] $*"
+    return 0
+  fi
+  "$@"
+}
+
+parse_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dry-run)
+        DRY_RUN=1
+        shift
+        ;;
+      --mode)
+        MODE="$2"
+        shift 2
+        ;;
+      *)
+        error "Unknown argument: $1"
+        exit 1
+        ;;
+    esac
+  done
 }
 
 require_root_if_install() {
@@ -76,8 +104,8 @@ print_hardware_report() {
 
 apt_install_basics() {
   export DEBIAN_FRONTEND=noninteractive
-  apt-get update
-  apt-get install -y --no-install-recommends \
+  run_cmd apt-get update
+  run_cmd apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     gnupg \
@@ -97,7 +125,7 @@ install_nvidia_driver() {
   fi
 
   info "Installing NVIDIA driver package: ${NVIDIA_DRIVER_PACKAGE}"
-  apt-get install -y "${NVIDIA_DRIVER_PACKAGE}"
+  run_cmd apt-get install -y "${NVIDIA_DRIVER_PACKAGE}"
 }
 
 install_nvidia_container_toolkit() {
@@ -115,24 +143,32 @@ install_nvidia_container_toolkit() {
   local keyring_path="/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
   local list_path="/etc/apt/sources.list.d/nvidia-container-toolkit.list"
 
-  curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
-    | gpg --dearmor -o "${keyring_path}"
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    echo "[DRY-RUN] curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o ${keyring_path}"
+  else
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+      | gpg --dearmor -o "${keyring_path}"
+  fi
 
-  curl -fsSL "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list" \
-    | sed "s#deb https://#deb [signed-by=${keyring_path}] https://#g" \
-    > "${list_path}"
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    echo "[DRY-RUN] write ${list_path} from NVIDIA toolkit list"
+  else
+    curl -fsSL "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list" \
+      | sed "s#deb https://#deb [signed-by=${keyring_path}] https://#g" \
+      > "${list_path}"
+  fi
 
-  apt-get update
-  apt-get install -y nvidia-container-toolkit
+  run_cmd apt-get update
+  run_cmd apt-get install -y nvidia-container-toolkit
 
   if command -v nvidia-ctk >/dev/null 2>&1; then
-    nvidia-ctk runtime configure --runtime=docker
+    run_cmd nvidia-ctk runtime configure --runtime=docker
   else
     warn "nvidia-ctk command not found after install"
   fi
 
   if command -v systemctl >/dev/null 2>&1; then
-    systemctl restart docker || warn "Failed to restart docker via systemctl"
+    run_cmd systemctl restart docker || warn "Failed to restart docker via systemctl"
   else
     warn "systemctl not available; please restart docker service manually"
   fi
@@ -166,6 +202,8 @@ run_install_flow() {
   print_hardware_report
   print_next_steps
 }
+
+parse_args "$@"
 
 case "${MODE}" in
   check|install)

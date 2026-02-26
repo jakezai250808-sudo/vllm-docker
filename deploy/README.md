@@ -116,6 +116,13 @@ bash deploy/scripts/setup_nvidia_host.sh
 
 ### 自动安装（Ubuntu，需 root）
 
+支持 `--dry-run`（只打印将执行命令，不真正安装）：
+
+```bash
+bash deploy/scripts/setup_nvidia_host.sh --mode install --dry-run
+```
+
+
 ```bash
 sudo MODE=install INSTALL_NVIDIA_TOOLKIT=1 INSTALL_NVIDIA_DRIVER=0 \
   bash deploy/scripts/setup_nvidia_host.sh
