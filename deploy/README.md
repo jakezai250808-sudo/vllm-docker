@@ -138,6 +138,9 @@ CLAUDE_BASE_IMAGE=node:20 \
 CLAUDE_NPM_PACKAGE=@anthropic-ai/claude-code \
 CLAUDE_BIN=claude \
 CLAUDE_NPM_REGISTRY=https://registry.npmmirror.com \
+CLAUDE_ENDPOINT=https://your-endpoint.example.com \
+CLAUDE_AK=sk-your-token \
+CLAUDE_MODEL=claude-3-7-sonnet \
 SAVE_IMAGE_TAR=1 \
   bash deploy/scripts/build_claude_code_image.sh
 ```
@@ -147,6 +150,18 @@ SAVE_IMAGE_TAR=1 \
 - 脚本会优先复用本地已有 `CLAUDE_BASE_IMAGE`，仅在本地缺失时才执行 `docker pull`。
 
 - 可通过 `CLAUDE_NPM_REGISTRY` 传入 npm registry；构建日志会打印 `[claude-build] npm registry=...` 以确认是否生效。
+
+- 可通过 `CLAUDE_ENDPOINT`、`CLAUDE_AK`、`CLAUDE_MODEL` 传入构建参数，脚本会在容器 `/root/.bashrc` 中写入：
+  - `export ANTHROPIC_BASE_URL=...`
+  - `export ANTHROPIC_AUTH_TOKEN=...`
+  - `export ANTHROPIC_MODEL=...`
+
+验证示例：
+
+```bash
+docker run --rm --entrypoint /bin/sh corp/claude-code-client:latest -lc \
+  "grep -E 'ANTHROPIC_BASE_URL|ANTHROPIC_AUTH_TOKEN|ANTHROPIC_MODEL' /root/.bashrc"
+```
 
 ## 安装最新版本 IDE（Java + CLion）（新增）
 
