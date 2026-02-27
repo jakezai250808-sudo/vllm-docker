@@ -105,6 +105,28 @@ bash deploy/scripts/load_and_run.sh
 
 
 
+
+## 构建 Claude Code 客户端镜像（新增）
+
+新增脚本：`deploy/scripts/build_claude_code_image.sh`
+
+```bash
+bash deploy/scripts/build_claude_code_image.sh
+```
+
+可选参数：
+
+```bash
+CLAUDE_IMAGE=corp/claude-code-client:latest \
+CLAUDE_BASE_IMAGE=node:20-bookworm-slim \
+CLAUDE_NPM_PACKAGE=@anthropic-ai/claude-code \
+CLAUDE_BIN=claude \
+SAVE_IMAGE_TAR=1 \
+  bash deploy/scripts/build_claude_code_image.sh
+```
+
+- `SAVE_IMAGE_TAR=1` 时会输出 `deploy/dist/claude_code_client.tar`（有 `zstd` 则同时生成 `.zst`）。
+
 ## 安装最新版本 IDE（Java + CLion）（新增）
 
 新增脚本：`deploy/scripts/install_latest_ide.sh`
