@@ -91,9 +91,9 @@ RUN if [ -n "\${NPM_REGISTRY}" ]; then \
          command -v ${CLAUDE_BIN} >/dev/null 2>&1 || { echo "[claude-build] no expected claude binary found after npm install" >&2; exit 1; }; \
        fi \
     && { \
-         echo "export endpoint=\${endpoint}"; \
-         echo "export ak=\${ak}"; \
-         echo "export model=\${model}"; \
+         echo "export ANTHROPIC_BASE_URL=\${endpoint}"; \
+         echo "export ANTHROPIC_AUTH_TOKEN=\${ak}"; \
+         echo "export ANTHROPIC_MODEL=\${model}"; \
        } >> /root/.bashrc \
     && npm cache clean --force
 
