@@ -127,6 +127,8 @@ SAVE_IMAGE_TAR=1 \
 
 - `SAVE_IMAGE_TAR=1` 时会输出 `deploy/dist/claude_code_client.tar`（有 `zstd` 则同时生成 `.zst`）。
 
+- 脚本会优先复用本地已有 `CLAUDE_BASE_IMAGE`，仅在本地缺失时才执行 `docker pull`。
+
 ## 安装最新版本 IDE（Java + CLion）（新增）
 
 新增脚本：`deploy/scripts/install_latest_ide.sh`

@@ -40,12 +40,14 @@ retry_docker_pull() {
 require_docker
 mkdir -p "${DIST_DIR}" "${TMP_DIR}"
 
-if ! retry_docker_pull "${CLAUDE_BASE_IMAGE}" "${DOCKER_PULL_RETRIES}" "${DOCKER_PULL_RETRY_WAIT}"; then
-  if ! docker image inspect "${CLAUDE_BASE_IMAGE}" >/dev/null 2>&1; then
+if docker image inspect "${CLAUDE_BASE_IMAGE}" >/dev/null 2>&1; then
+  log "Base image already exists locally, skip pull: ${CLAUDE_BASE_IMAGE}"
+else
+  log "Base image not found locally, pulling: ${CLAUDE_BASE_IMAGE}"
+  if ! retry_docker_pull "${CLAUDE_BASE_IMAGE}" "${DOCKER_PULL_RETRIES}" "${DOCKER_PULL_RETRY_WAIT}"; then
     echo "Failed to pull base image ${CLAUDE_BASE_IMAGE} and no local copy found." >&2
     exit 1
   fi
-  log "Pull failed but local base image exists: ${CLAUDE_BASE_IMAGE}"
 fi
 
 DOCKERFILE_PATH="${TMP_DIR}/Dockerfile.claude-code"
