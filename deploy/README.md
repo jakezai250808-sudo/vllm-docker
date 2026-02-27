@@ -106,6 +106,22 @@ bash deploy/scripts/load_and_run.sh
 
 
 
+## 网络代理约定（新增）
+
+当脚本需要访问网络时（例如 `docker pull`、`pip`、`huggingface_hub`），默认使用：
+
+- `http_proxy=http://127.0.0.1:3128`
+- `https_proxy=http://127.0.0.1:3128`
+
+脚本从 `deploy/scripts/common.sh` 统一注入该默认值；如果你已在环境里手动设置了代理变量，则会保留你的设置（不会覆盖）。
+
+可选覆盖：
+
+```bash
+export DEFAULT_PROXY_URL=http://127.0.0.1:3128
+# 或者显式设置 http_proxy/https_proxy
+```
+
 ## 构建 Claude Code 客户端镜像（新增）
 
 新增脚本：`deploy/scripts/build_claude_code_image.sh`

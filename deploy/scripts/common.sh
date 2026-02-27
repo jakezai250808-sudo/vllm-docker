@@ -10,6 +10,15 @@ if [[ -f "${ENV_FILE}" ]]; then
   source "${ENV_FILE}"
 fi
 
+DEFAULT_PROXY_URL="${DEFAULT_PROXY_URL:-http://127.0.0.1:3128}"
+
+if [[ -z "${http_proxy:-}" ]]; then export http_proxy="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${https_proxy:-}" ]]; then export https_proxy="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${HTTP_PROXY:-}" ]]; then export HTTP_PROXY="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${HTTPS_PROXY:-}" ]]; then export HTTPS_PROXY="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${no_proxy:-}" ]]; then export no_proxy="127.0.0.1,localhost"; fi
+if [[ -z "${NO_PROXY:-}" ]]; then export NO_PROXY="${no_proxy}"; fi
+
 NETWORK_NAME="${NETWORK_NAME:-llm-net}"
 INFERENCE_CONTAINER_NAME="${INFERENCE_CONTAINER_NAME:-inference}"
 GATEWAY_CONTAINER_NAME="${GATEWAY_CONTAINER_NAME:-llm-gateway}"
