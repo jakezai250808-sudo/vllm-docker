@@ -11,6 +11,7 @@ CLAUDE_IMAGE="${CLAUDE_IMAGE:-corp/claude-code-client:latest}"
 CLAUDE_BASE_IMAGE="${CLAUDE_BASE_IMAGE:-node:20}"
 CLAUDE_NPM_PACKAGE="${CLAUDE_NPM_PACKAGE:-@anthropic-ai/claude-code}"
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
+CLAUDE_NPM_REGISTRY="${CLAUDE_NPM_REGISTRY:-}"
 DOCKER_PULL_RETRIES="${DOCKER_PULL_RETRIES:-3}"
 DOCKER_PULL_RETRY_WAIT="${DOCKER_PULL_RETRY_WAIT:-10}"
 SAVE_IMAGE_TAR="${SAVE_IMAGE_TAR:-0}"
@@ -54,9 +55,14 @@ DOCKERFILE_PATH="${TMP_DIR}/Dockerfile.claude-code"
 cat > "${DOCKERFILE_PATH}" <<DOCKERFILE
 FROM ${CLAUDE_BASE_IMAGE}
 
+ARG NPM_REGISTRY
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-RUN npm install -g ${CLAUDE_NPM_PACKAGE} \
+RUN if [ -n "${NPM_REGISTRY}" ]; then \
+      npm config set registry "${NPM_REGISTRY}"; \
+    fi \
+    && echo "[claude-build] npm registry=$(npm config get registry)" \
+    && npm install -g ${CLAUDE_NPM_PACKAGE} \
     && npm cache clean --force
 
 WORKDIR /workspace
@@ -64,8 +70,17 @@ WORKDIR /workspace
 ENTRYPOINT ["${CLAUDE_BIN}"]
 DOCKERFILE
 
-log "Building Claude Code client image ${CLAUDE_IMAGE}"
-docker build -t "${CLAUDE_IMAGE}" -f "${DOCKERFILE_PATH}" "${TMP_DIR}"
+if [[ -n "${CLAUDE_NPM_REGISTRY}" ]]; then
+  log "Building Claude Code client image ${CLAUDE_IMAGE} with npm registry ${CLAUDE_NPM_REGISTRY}"
+else
+  log "Building Claude Code client image ${CLAUDE_IMAGE} with default npm registry"
+fi
+
+docker build \
+  --build-arg NPM_REGISTRY="${CLAUDE_NPM_REGISTRY}" \
+  -t "${CLAUDE_IMAGE}" \
+  -f "${DOCKERFILE_PATH}" \
+  "${TMP_DIR}"
 
 log "Validating CLI binary in image"
 if ! docker run --rm --entrypoint /bin/sh "${CLAUDE_IMAGE}" -lc "command -v ${CLAUDE_BIN}" >/dev/null 2>&1; then

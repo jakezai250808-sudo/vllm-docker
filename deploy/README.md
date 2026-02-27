@@ -137,6 +137,7 @@ CLAUDE_IMAGE=corp/claude-code-client:latest \
 CLAUDE_BASE_IMAGE=node:20 \
 CLAUDE_NPM_PACKAGE=@anthropic-ai/claude-code \
 CLAUDE_BIN=claude \
+CLAUDE_NPM_REGISTRY=https://registry.npmmirror.com \
 SAVE_IMAGE_TAR=1 \
   bash deploy/scripts/build_claude_code_image.sh
 ```
@@ -144,6 +145,8 @@ SAVE_IMAGE_TAR=1 \
 - `SAVE_IMAGE_TAR=1` 时会输出 `deploy/dist/claude_code_client.tar`（有 `zstd` 则同时生成 `.zst`）。
 
 - 脚本会优先复用本地已有 `CLAUDE_BASE_IMAGE`，仅在本地缺失时才执行 `docker pull`。
+
+- 可通过 `CLAUDE_NPM_REGISTRY` 传入 npm registry；构建日志会打印 `[claude-build] npm registry=...` 以确认是否生效。
 
 ## 安装最新版本 IDE（Java + CLion）（新增）
 
