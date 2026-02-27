@@ -64,8 +64,14 @@ ARG ak
 ARG model
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+ENV ANTHROPIC_BASE_URL=
+ENV ANTHROPIC_AUTH_TOKEN=
+ENV ANTHROPIC_MODEL=
 
-RUN if [ -n "\${NPM_REGISTRY}" ]; then \
+RUN export ANTHROPIC_BASE_URL="\${endpoint}" \
+    && export ANTHROPIC_AUTH_TOKEN="\${ak}" \
+    && export ANTHROPIC_MODEL="\${model}" \
+    && if [ -n "\${NPM_REGISTRY}" ]; then \
       npm config set registry "\${NPM_REGISTRY}"; \
     fi \
     && npm config set strict-ssl false \
@@ -90,6 +96,7 @@ RUN if [ -n "\${NPM_REGISTRY}" ]; then \
          fi; \
          command -v ${CLAUDE_BIN} >/dev/null 2>&1 || { echo "[claude-build] no expected claude binary found after npm install" >&2; exit 1; }; \
        fi \
+    && echo "[claude-build] anthropic base_url=\${ANTHROPIC_BASE_URL:-<empty>} auth_token=\${ANTHROPIC_AUTH_TOKEN:+<set>} model=\${ANTHROPIC_MODEL:-<empty>}" \
     && { \
          echo "export ANTHROPIC_BASE_URL=\${endpoint}"; \
          echo "export ANTHROPIC_AUTH_TOKEN=\${ak}"; \
