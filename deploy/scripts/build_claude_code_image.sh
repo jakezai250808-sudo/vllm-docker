@@ -67,6 +67,15 @@ RUN if [ -n "\${NPM_REGISTRY}" ]; then \
     && echo "[claude-build] strict-ssl=\$(npm config get strict-ssl), NODE_TLS_REJECT_UNAUTHORIZED=\${NODE_TLS_REJECT_UNAUTHORIZED}" \
     && echo "[claude-build] npm registry=\$(npm config get registry)" \
     && npm install -g ${CLAUDE_NPM_PACKAGE} \
+    && if command -v ${CLAUDE_BIN} >/dev/null 2>&1; then \
+         echo "[claude-build] binary ${CLAUDE_BIN} already available"; \
+       elif command -v claude-code >/dev/null 2>&1; then \
+         ln -sf "\$(command -v claude-code)" "/usr/local/bin/${CLAUDE_BIN}"; \
+         echo "[claude-build] linked ${CLAUDE_BIN} -> claude-code"; \
+       else \
+         echo "[claude-build] no expected claude binary found after npm install" >&2; \
+         exit 1; \
+       fi \
     && npm cache clean --force
 
 WORKDIR /workspace
