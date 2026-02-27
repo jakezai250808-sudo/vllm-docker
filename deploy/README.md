@@ -118,7 +118,7 @@ bash deploy/scripts/build_claude_code_image.sh
 
 ```bash
 CLAUDE_IMAGE=corp/claude-code-client:latest \
-CLAUDE_BASE_IMAGE=node:20-bookworm-slim \
+CLAUDE_BASE_IMAGE=node:20 \
 CLAUDE_NPM_PACKAGE=@anthropic-ai/claude-code \
 CLAUDE_BIN=claude \
 SAVE_IMAGE_TAR=1 \
