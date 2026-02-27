@@ -73,8 +73,16 @@ RUN if [ -n "\${NPM_REGISTRY}" ]; then \
          ln -sf "\$(command -v claude-code)" "/usr/local/bin/${CLAUDE_BIN}"; \
          echo "[claude-build] linked ${CLAUDE_BIN} -> claude-code"; \
        else \
-         echo "[claude-build] no expected claude binary found after npm install" >&2; \
-         exit 1; \
+         PKG_JSON="\$(npm root -g)/${CLAUDE_NPM_PACKAGE}/package.json"; \
+         if [ -f "\${PKG_JSON}" ]; then \
+           BIN_PATH="\$(node -e 'const fs=require("fs"); const p=process.argv[1]; const j=JSON.parse(fs.readFileSync(p,"utf8")); const b=j.bin; if(typeof b=="string"){process.stdout.write(b);} else if(b && typeof b=="object"){const ks=Object.keys(b); if(ks.length){process.stdout.write(String(b[ks[0]]));}}' "\${PKG_JSON}")"; \
+           if [ -n "\${BIN_PATH}" ] && [ -f "\$(dirname "\${PKG_JSON}")/\${BIN_PATH}" ]; then \
+             ln -sf "\$(dirname "\${PKG_JSON}")/\${BIN_PATH}" "/usr/local/bin/${CLAUDE_BIN}"; \
+             chmod +x "/usr/local/bin/${CLAUDE_BIN}"; \
+             echo "[claude-build] linked ${CLAUDE_BIN} -> \${BIN_PATH} from package.json"; \
+           fi; \
+         fi; \
+         command -v ${CLAUDE_BIN} >/dev/null 2>&1 || { echo "[claude-build] no expected claude binary found after npm install" >&2; exit 1; }; \
        fi \
     && npm cache clean --force
 
