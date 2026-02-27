@@ -58,10 +58,10 @@ FROM ${CLAUDE_BASE_IMAGE}
 ARG NPM_REGISTRY
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-RUN if [ -n "${NPM_REGISTRY}" ]; then \
-      npm config set registry "${NPM_REGISTRY}"; \
+RUN if [ -n "\${NPM_REGISTRY}" ]; then \
+      npm config set registry "\${NPM_REGISTRY}"; \
     fi \
-    && echo "[claude-build] npm registry=$(npm config get registry)" \
+    && echo "[claude-build] npm registry=\$(npm config get registry)" \
     && npm install -g ${CLAUDE_NPM_PACKAGE} \
     && npm cache clean --force
 
