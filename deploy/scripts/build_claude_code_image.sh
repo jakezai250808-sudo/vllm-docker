@@ -57,10 +57,14 @@ FROM ${CLAUDE_BASE_IMAGE}
 
 ARG NPM_REGISTRY
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 RUN if [ -n "\${NPM_REGISTRY}" ]; then \
       npm config set registry "\${NPM_REGISTRY}"; \
     fi \
+    && npm config set strict-ssl false \
+    && npm config set fund false \
+    && echo "[claude-build] strict-ssl=\$(npm config get strict-ssl), NODE_TLS_REJECT_UNAUTHORIZED=\${NODE_TLS_REJECT_UNAUTHORIZED}" \
     && echo "[claude-build] npm registry=\$(npm config get registry)" \
     && npm install -g ${CLAUDE_NPM_PACKAGE} \
     && npm cache clean --force
