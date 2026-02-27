@@ -12,6 +12,9 @@ CLAUDE_BASE_IMAGE="${CLAUDE_BASE_IMAGE:-node:20}"
 CLAUDE_NPM_PACKAGE="${CLAUDE_NPM_PACKAGE:-@anthropic-ai/claude-code}"
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 CLAUDE_NPM_REGISTRY="${CLAUDE_NPM_REGISTRY:-}"
+CLAUDE_ENDPOINT="${CLAUDE_ENDPOINT:-}"
+CLAUDE_AK="${CLAUDE_AK:-}"
+CLAUDE_MODEL="${CLAUDE_MODEL:-}"
 DOCKER_PULL_RETRIES="${DOCKER_PULL_RETRIES:-3}"
 DOCKER_PULL_RETRY_WAIT="${DOCKER_PULL_RETRY_WAIT:-10}"
 SAVE_IMAGE_TAR="${SAVE_IMAGE_TAR:-0}"
@@ -56,6 +59,9 @@ cat > "${DOCKERFILE_PATH}" <<DOCKERFILE
 FROM ${CLAUDE_BASE_IMAGE}
 
 ARG NPM_REGISTRY
+ARG endpoint
+ARG ak
+ARG model
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
@@ -84,6 +90,11 @@ RUN if [ -n "\${NPM_REGISTRY}" ]; then \
          fi; \
          command -v ${CLAUDE_BIN} >/dev/null 2>&1 || { echo "[claude-build] no expected claude binary found after npm install" >&2; exit 1; }; \
        fi \
+    && { \
+         echo "export endpoint=\${endpoint}"; \
+         echo "export ak=\${ak}"; \
+         echo "export model=\${model}"; \
+       } >> /root/.bashrc \
     && npm cache clean --force
 
 WORKDIR /workspace
@@ -97,8 +108,13 @@ else
   log "Building Claude Code client image ${CLAUDE_IMAGE} with default npm registry"
 fi
 
+log "Injecting bashrc vars: endpoint=${CLAUDE_ENDPOINT:-<empty>} ak=${CLAUDE_AK:+<set>} model=${CLAUDE_MODEL:-<empty>}"
+
 docker build \
   --build-arg NPM_REGISTRY="${CLAUDE_NPM_REGISTRY}" \
+  --build-arg endpoint="${CLAUDE_ENDPOINT}" \
+  --build-arg ak="${CLAUDE_AK}" \
+  --build-arg model="${CLAUDE_MODEL}" \
   -t "${CLAUDE_IMAGE}" \
   -f "${DOCKERFILE_PATH}" \
   "${TMP_DIR}"
