@@ -134,6 +134,18 @@ sudo JAVA_PACKAGE=openjdk-17-jdk IDEA_CHANNEL=latest/stable CLION_CHANNEL=latest
   bash deploy/scripts/install_latest_ide.sh
 ```
 
+若你的环境无法连接 Snap Store（如报“无法连接 snap 商店”），脚本默认会告警并跳过 IDE 安装（不会整体失败）。
+
+```bash
+sudo ALLOW_SNAP_FAILURE=1 bash deploy/scripts/install_latest_ide.sh
+```
+
+若你希望连接失败时直接报错退出：
+
+```bash
+sudo ALLOW_SNAP_FAILURE=0 bash deploy/scripts/install_latest_ide.sh
+```
+
 若只安装 CLion（跳过 IDEA）：
 
 ```bash

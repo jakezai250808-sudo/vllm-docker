@@ -12,6 +12,7 @@ CLION_CHANNEL="${CLION_CHANNEL:-stable}"
 JAVA_PACKAGE="${JAVA_PACKAGE:-openjdk-21-jdk}"
 INSTALL_INTELLIJ_IDEA="${INSTALL_INTELLIJ_IDEA:-1}"
 INSTALL_CLION="${INSTALL_CLION:-1}"
+ALLOW_SNAP_FAILURE="${ALLOW_SNAP_FAILURE:-1}"
 
 info() {
   log "[INFO] $*"
@@ -85,6 +86,26 @@ ensure_snapd() {
   fi
 }
 
+check_snap_store() {
+  if [[ "${DRY_RUN}" == "1" ]]; then
+    info "DRY_RUN=1, skip snap store connectivity check"
+    return 0
+  fi
+
+  if snap info core >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ "${ALLOW_SNAP_FAILURE}" == "1" ]]; then
+    warn "Unable to connect to Snap Store; skip IDE installation via snap."
+    warn "You can install JetBrains IDEs manually (offline package/toolbox) after network is available."
+    return 1
+  fi
+
+  error "Unable to connect to Snap Store and ALLOW_SNAP_FAILURE=0"
+  return 2
+}
+
 install_java() {
   info "Installing Java package: ${JAVA_PACKAGE}"
   run_cmd apt-get update
@@ -102,6 +123,10 @@ install_intellij_idea_ultimate() {
     return 0
   fi
 
+  if ! check_snap_store; then
+    return 0
+  fi
+
   info "Installing IntelliJ IDEA Ultimate (${IDEA_CHANNEL}) via snap"
   run_cmd snap install intellij-idea-ultimate --classic --channel="${IDEA_CHANNEL}"
 }
@@ -109,6 +134,10 @@ install_intellij_idea_ultimate() {
 install_clion() {
   if [[ "${INSTALL_CLION}" != "1" ]]; then
     info "INSTALL_CLION=${INSTALL_CLION}, skip CLion"
+    return 0
+  fi
+
+  if ! check_snap_store; then
     return 0
   fi
 
@@ -125,6 +154,7 @@ print_summary() {
   echo "Java package: ${JAVA_PACKAGE}"
   echo "IntelliJ IDEA: $([[ "${INSTALL_INTELLIJ_IDEA}" == "1" ]] && echo enabled || echo disabled)"
   echo "CLion: $([[ "${INSTALL_CLION}" == "1" ]] && echo enabled || echo disabled)"
+  echo "ALLOW_SNAP_FAILURE: ${ALLOW_SNAP_FAILURE}"
 }
 
 parse_args "$@"
