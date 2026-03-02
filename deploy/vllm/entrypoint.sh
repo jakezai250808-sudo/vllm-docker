@@ -1,15 +1,13 @@
 #!/bin/sh
 set -eu
 
-TP="${TP:-2}"
+MODEL_PATH="${MODEL_PATH:-/models/Qwen3-Coder-Next}"
+TP="${TP:-1}"
 PORT="${PORT:-8000}"
-MAX_MODEL_LEN="${MAX_MODEL_LEN:-65536}"
+MAX_MODEL_LEN="${MAX_MODEL_LEN:-4096}"
 DTYPE="${DTYPE:-auto}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
-
-# If user passes a custom command to `docker run <image> ...`, run it directly.
-# This avoids forwarding debug commands into vLLM api_server arguments.
 if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
@@ -23,11 +21,11 @@ else
   exit 127
 fi
 
-echo "Starting vLLM OpenAI API server with model /models/Qwen3-Coder-Next (python=${PYTHON_BIN})"
+echo "Starting vLLM OpenAI API server: model=${MODEL_PATH}, tp=${TP}, max_model_len=${MAX_MODEL_LEN}, dtype=${DTYPE}, port=${PORT}"
 
 # shellcheck disable=SC2086
 exec "${PYTHON_BIN}" -m vllm.entrypoints.openai.api_server \
-  --model /models/Qwen3-Coder-Next \
+  --model "${MODEL_PATH}" \
   --port "${PORT}" \
   --tensor-parallel-size "${TP}" \
   --max-model-len "${MAX_MODEL_LEN}" \

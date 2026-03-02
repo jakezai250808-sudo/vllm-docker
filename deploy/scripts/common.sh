@@ -10,10 +10,24 @@ if [[ -f "${ENV_FILE}" ]]; then
   source "${ENV_FILE}"
 fi
 
+DEFAULT_PROXY_URL="${DEFAULT_PROXY_URL:-http://127.0.0.1:3128}"
+
+if [[ -z "${http_proxy:-}" ]]; then export http_proxy="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${https_proxy:-}" ]]; then export https_proxy="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${HTTP_PROXY:-}" ]]; then export HTTP_PROXY="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${HTTPS_PROXY:-}" ]]; then export HTTPS_PROXY="${DEFAULT_PROXY_URL}"; fi
+if [[ -z "${no_proxy:-}" ]]; then export no_proxy="127.0.0.1,localhost"; fi
+if [[ -z "${NO_PROXY:-}" ]]; then export NO_PROXY="${no_proxy}"; fi
+
 NETWORK_NAME="${NETWORK_NAME:-llm-net}"
 INFERENCE_CONTAINER_NAME="${INFERENCE_CONTAINER_NAME:-inference}"
 GATEWAY_CONTAINER_NAME="${GATEWAY_CONTAINER_NAME:-llm-gateway}"
-IMAGE_INFERENCE="${IMAGE_INFERENCE:-corp/qwen3-coder-next-vllm:offline}"
+IMAGE_INFERENCE="${IMAGE_INFERENCE:-corp/qwen3-coder-next-vllm:cu121}"
+LEGACY_IMAGE_INFERENCE="corp/qwen3-coder-next-vllm:offline"
+if [[ "${IMAGE_INFERENCE}" == "${LEGACY_IMAGE_INFERENCE}" ]]; then
+  echo "[WARN] IMAGE_INFERENCE still points to legacy tag ${LEGACY_IMAGE_INFERENCE}; overriding to corp/qwen3-coder-next-vllm:cu121. Update deploy/.env to avoid this warning." >&2
+  IMAGE_INFERENCE="corp/qwen3-coder-next-vllm:cu121"
+fi
 IMAGE_GATEWAY="${IMAGE_GATEWAY:-nginx:stable}"
 INFERENCE_PORT="${INFERENCE_PORT:-8000}"
 GATEWAY_PORT="${GATEWAY_PORT:-8080}"
@@ -59,7 +73,7 @@ ensure_image() {
 
 remove_container_if_exists() {
   local container="$1"
-  if docker ps -a --format '{{.Names}}' | rg -x "${container}" >/dev/null 2>&1; then
+  if docker ps -a --format '{{.Names}}' | grep -Fx "${container}" >/dev/null 2>&1; then
     log "Removing existing container ${container}"
     docker rm -f "${container}" >/dev/null
   fi

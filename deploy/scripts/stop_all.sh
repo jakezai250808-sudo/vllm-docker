@@ -8,7 +8,7 @@ source "${SCRIPT_DIR}/common.sh"
 require_docker
 
 for c in "${GATEWAY_CONTAINER_NAME}" "${INFERENCE_CONTAINER_NAME}"; do
-  if docker ps -a --format '{{.Names}}' | rg -x "${c}" >/dev/null 2>&1; then
+  if docker ps -a --format '{{.Names}}' | grep -Fx "${c}" >/dev/null 2>&1; then
     log "Stopping and removing ${c}"
     docker rm -f "${c}" >/dev/null
   else
