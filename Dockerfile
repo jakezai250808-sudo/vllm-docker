@@ -1,4 +1,4 @@
-FROM nginx:1.27-alpine
+FROM nginx:stable-alpine
 
 RUN apk add --no-cache gettext bash
 

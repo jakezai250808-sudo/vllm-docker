@@ -55,8 +55,10 @@ deny all;
 ## 构建镜像
 
 ```bash
-docker build -t llm-gw:latest .
+docker build --pull=false -t llm-gw:latest .
 ```
+
+> 说明：基础镜像使用 `nginx:stable-alpine`。当本地已有该镜像时，`--pull=false` 会优先使用本地镜像构建，不主动拉取远端。
 
 ## 运行容器（强调挂载 whitelist.conf）
 
