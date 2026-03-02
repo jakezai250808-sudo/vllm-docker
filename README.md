@@ -34,8 +34,16 @@ deny all;
 
 ## 构建镜像
 
+默认使用本地已有 `nginx:stable` 镜像进行构建（不主动拉取远端）：
+
 ```bash
-docker build -t a100-edge-nginx:latest .
+docker build --pull=never -t a100-edge-nginx:latest .
+```
+
+如本地不存在 `nginx:stable`，先拉取：
+
+```bash
+docker pull nginx:stable
 ```
 
 ## 运行容器（必须使用 host 网络）
